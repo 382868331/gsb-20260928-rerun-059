@@ -1,0 +1,10 @@
+{
+  "seed": 20260929,
+  "target": "targets.simple_message.parse_message",
+  "cases_executed": 64,
+  "findings": 1,
+  "duration": 0.07098744600079954,
+  "finding_files": [
+    "crash:IndexError.json"
+  ]
+}

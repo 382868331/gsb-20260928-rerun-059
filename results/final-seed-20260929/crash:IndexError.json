@@ -1,0 +1,20 @@
+{
+  "signature": {
+    "outcome": "crash",
+    "exception_type": "IndexError",
+    "message": "tuple index out of range",
+    "key": "crash:IndexError"
+  },
+  "original_index": 25,
+  "attempts": 5,
+  "created_at": 1790624227.9208589,
+  "original_hex": "534d01000001ff",
+  "minimized_hex": "534d01000001ff",
+  "minimized_size": 7,
+  "critical_byte_offsets": [
+    0,
+    1,
+    2,
+    6
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "bundled-simple-message-parser",
+  "description": "Controlled mutation testing of the project-owned SM message parser; no external target is contacted.",
+  "target": "targets.simple_message.parse_message",
+  "local_only": true,
+  "failure_policy": {
+    "rejected": "expected parser rejection, not a finding",
+    "crash": "reduce while preserving exception type",
+    "timeout": "separate timeout finding; never merge with crashes",
+    "runner_error": "preserve current sample and abnormal process exit code"
+  },
+  "default_budget": {
+    "seed": 20260929,
+    "max_cases": 128,
+    "timeout_seconds": 1.0
+  }
+}

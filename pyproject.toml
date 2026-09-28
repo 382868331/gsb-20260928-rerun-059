@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proto-robust"
+version = "0.1.0"
+description = "Deterministic, budgeted protocol robustness research system"
+requires-python = ">=3.10"
+
+[project.scripts]
+proto-robust = "proto_robust.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["proto_robust*"]
