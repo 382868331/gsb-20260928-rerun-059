@@ -1,0 +1,12 @@
+{
+  "name": "message-parser",
+  "target": "robustlab.worker",
+  "seed": 20260929,
+  "max_iterations": 40,
+  "max_wall_time_s": 120.0,
+  "timeout_s": 0.5,
+  "stop_after_first_failure": false,
+  "minimize": true,
+  "results_root": "results",
+  "description": "项目自带 A5 5A 消息帧解析器；不访问任何外部目标。"
+}

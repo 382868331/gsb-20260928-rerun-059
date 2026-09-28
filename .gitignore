@@ -4,5 +4,8 @@ __pycache__/
 .pytest_cache/
 .env
 .env.*
+results/
+results_old_*/
+robustlab_run_*/
 *.pem
 *.key
