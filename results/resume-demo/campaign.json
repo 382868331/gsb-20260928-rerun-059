@@ -1,0 +1,20 @@
+{
+  "seed": 20260929,
+  "target": "targets.simple_message.parse_message",
+  "cases_executed": 16,
+  "findings": 3,
+  "duration": 4.1313720750040375,
+  "budget": {
+    "max_cases": 6,
+    "timeout": 0.5,
+    "wall_time": null
+  },
+  "budget_exhausted": true,
+  "resumed": true,
+  "next_index": 16,
+  "finding_files": [
+    "crash:IndexError@parse_message:75#8.json",
+    "crash:IndexError@parse_message:77#9.json",
+    "timeout#10.json"
+  ]
+}

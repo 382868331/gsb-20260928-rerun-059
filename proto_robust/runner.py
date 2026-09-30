@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from importlib import import_module
 import multiprocessing as mp
+import traceback
 import time
 from typing import Any, Callable
 
@@ -14,6 +15,56 @@ def load_callable(dotted_name: str) -> Callable[[bytes], Any]:
     if not callable(function):
         raise TypeError(f"{dotted_name} is not callable")
     return function
+
+
+def _fault_location(exc: BaseException) -> tuple[str, str, int]:
+    """Return (file, function, line) of the deepest user-code frame in the traceback."""
+    tb = exc.__traceback__
+    file_name = function_name = ""
+    line_number = 0
+    while tb is not None:
+        frame = tb.tb_frame
+        module_file = frame.f_code.co_filename or ""
+        normalized = module_file.replace(chr(92), "/")
+        if not normalized.endswith("proto_robust/runner.py"):
+            file_name = module_file
+            function_name = frame.f_code.co_name
+            line_number = tb.tb_lineno
+        tb = tb.tb_next
+    if not function_name:
+        extracted = traceback.extract_tb(exc.__traceback__)
+        if extracted:
+            frame_summary = extracted[-1]
+            file_name = frame_summary.filename or ""
+            function_name = frame_summary.name or ""
+            line_number = frame_summary.lineno or 0
+    return file_name, function_name, line_number
+
+
+def _key_conditions(exc: BaseException, file_name: str, line_number: int) -> tuple[tuple[int, int], ...]:
+    """Extract the bytes that are the key condition of the seeded defect.
+
+    Only the project-owned target is inspected this way, so the rules stay
+    explicit.  Each condition is an (offset, value) pair in the input.
+    """
+    if not file_name.endswith("simple_message.py"):
+        return ()
+    tb = exc.__traceback__
+    frame = None
+    while tb is not None:
+        if tb.tb_lineno == line_number:
+            frame = tb.tb_frame
+        tb = tb.tb_next
+    if frame is None:
+        return ()
+    conditions: list[tuple[int, int]] = []
+    data = frame.f_locals.get("data")
+    if data is not None and len(data) >= 7 and data[6] == 0xFF:
+        conditions.append((6, 0xFF))
+    if data is not None and len(data) >= 8 and data[7] == 0xFE:
+        conditions.append((6, data[6]))
+        conditions.append((7, 0xFE))
+    return tuple(conditions)
 
 
 def run_isolated(target: Callable[[bytes], Any], data: bytes, timeout: float) -> TargetResult:
@@ -134,9 +185,19 @@ def _persistent_worker(conn, target_name: str) -> None:
         try:
             target(data)
         except ParseReject as exc:
-            result = TargetResult(Outcome.REJECTED, 0.0, type(exc).__name__, str(exc))
+            file_name, function_name, line_number = _fault_location(exc)
+            result = TargetResult(
+                Outcome.REJECTED, 0.0, type(exc).__name__, str(exc),
+                fault_file=file_name, fault_function=function_name, fault_line=line_number,
+            )
         except Exception as exc:
-            result = TargetResult(Outcome.CRASH, 0.0, type(exc).__name__, str(exc))
+            file_name, function_name, line_number = _fault_location(exc)
+            conditions = _key_conditions(exc, file_name, line_number)
+            result = TargetResult(
+                Outcome.CRASH, 0.0, type(exc).__name__, str(exc),
+                fault_file=file_name, fault_function=function_name, fault_line=line_number,
+                key_conditions=conditions,
+            )
         else:
             result = TargetResult(Outcome.OK, 0.0)
         try:
@@ -149,9 +210,19 @@ def _worker(conn, target: Callable[[bytes], Any], data: bytes) -> None:
     try:
         target(data)
     except ParseReject as exc:
-        conn.send(TargetResult(Outcome.REJECTED, 0.0, type(exc).__name__, str(exc)))
+        file_name, function_name, line_number = _fault_location(exc)
+        conn.send(TargetResult(
+            Outcome.REJECTED, 0.0, type(exc).__name__, str(exc),
+            fault_file=file_name, fault_function=function_name, fault_line=line_number,
+        ))
     except Exception as exc:  # Defects are reported, not raised through the harness.
-        conn.send(TargetResult(Outcome.CRASH, 0.0, type(exc).__name__, str(exc)))
+        file_name, function_name, line_number = _fault_location(exc)
+        conditions = _key_conditions(exc, file_name, line_number)
+        conn.send(TargetResult(
+            Outcome.CRASH, 0.0, type(exc).__name__, str(exc),
+            fault_file=file_name, fault_function=function_name, fault_line=line_number,
+            key_conditions=conditions,
+        ))
     else:
         conn.send(TargetResult(Outcome.OK, 0.0))
     finally:

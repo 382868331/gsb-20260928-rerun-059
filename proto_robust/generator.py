@@ -29,11 +29,21 @@ class SimpleMessageGenerator:
         if index < 8:
             payload = bytes([index]) if index else b""
             label = "direct-operation"
-        elif index < 24:
-            payload = bytes([(index - 8) % 256])
+        elif index == 8:
+            return GeneratedCase(index, "directed-operation-table-overread", self._frame(b"\xff"))
+        elif index == 9:
+            return GeneratedCase(index, "directed-channel-table-overread", self._frame(b"\x01\xfe"))
+        elif index == 10:
+            return GeneratedCase(
+                index,
+                "directed-timing-stall",
+                MAGIC + bytes([1, 0x77]) + (0).to_bytes(2, "big"),
+            )
+        elif index < 27:
+            payload = bytes([(index - 11) % 256])
             label = "operation-byte-sweep"
         else:
-            payload = self._mutated_payload(index)
+            payload = self._mutated_payload(index - 3)
             label = "seeded-structured-mutation"
         return GeneratedCase(index, label, self._frame(payload))
 

@@ -1,0 +1,115 @@
+{
+  "signature": {
+    "outcome": "crash",
+    "exception_type": "IndexError",
+    "message": "tuple index out of range",
+    "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+    "fault_function": "parse_message",
+    "fault_line": 75,
+    "key_conditions": [
+      {
+        "offset": 6,
+        "value": 255
+      }
+    ],
+    "key": "crash:IndexError@parse_message:75"
+  },
+  "original_index": 8,
+  "attempts": 18,
+  "stable": true,
+  "confirmation": {
+    "hits": 5,
+    "runs": 5,
+    "reproduction_rate": 1.0,
+    "trials": [
+      {
+        "outcome": "crash",
+        "exception_type": "IndexError",
+        "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+        "fault_function": "parse_message",
+        "fault_line": 75,
+        "duration": 5.272001726552844e-05
+      },
+      {
+        "outcome": "crash",
+        "exception_type": "IndexError",
+        "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+        "fault_function": "parse_message",
+        "fault_line": 75,
+        "duration": 4.343199543654919e-05
+      },
+      {
+        "outcome": "crash",
+        "exception_type": "IndexError",
+        "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+        "fault_function": "parse_message",
+        "fault_line": 75,
+        "duration": 4.2328028939664364e-05
+      },
+      {
+        "outcome": "crash",
+        "exception_type": "IndexError",
+        "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+        "fault_function": "parse_message",
+        "fault_line": 75,
+        "duration": 3.754603676497936e-05
+      },
+      {
+        "outcome": "crash",
+        "exception_type": "IndexError",
+        "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+        "fault_function": "parse_message",
+        "fault_line": 75,
+        "duration": 3.5882985685020685e-05
+      }
+    ]
+  },
+  "created_at": 1790741842.2432592,
+  "original_hex": "534d01000001ff",
+  "minimized_hex": "534d01000001ff",
+  "minimized_size": 7,
+  "critical_byte_offsets": [
+    0,
+    1,
+    2,
+    6
+  ],
+  "reduction_steps": [
+    {
+      "step": 0,
+      "action": "baseline",
+      "hex": "534d01000001ff",
+      "size": 7,
+      "accepted": true,
+      "hits": 3,
+      "runs": 3,
+      "reason": "original sample re-run to confirm defect type, location and key conditions",
+      "trials": [
+        {
+          "outcome": "crash",
+          "exception_type": "IndexError",
+          "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+          "fault_function": "parse_message",
+          "fault_line": 75,
+          "duration": 4.9758004024624825e-05
+        },
+        {
+          "outcome": "crash",
+          "exception_type": "IndexError",
+          "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+          "fault_function": "parse_message",
+          "fault_line": 75,
+          "duration": 3.7743011489510536e-05
+        },
+        {
+          "outcome": "crash",
+          "exception_type": "IndexError",
+          "fault_file": "/做题/题目/20260930-followup150/059-协议健壮性研究系统/A/attempts/002/workspace/targets/simple_message.py",
+          "fault_function": "parse_message",
+          "fault_line": 75,
+          "duration": 3.496394492685795e-05
+        }
+      ]
+    }
+  ]
+}

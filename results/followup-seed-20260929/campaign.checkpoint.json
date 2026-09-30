@@ -1,0 +1,36 @@
+{
+  "seed": 20260929,
+  "target": "targets.simple_message.parse_message",
+  "budget": {
+    "max_cases": 16,
+    "timeout": 0.5,
+    "wall_time": null
+  },
+  "next_index": 16,
+  "cases_executed": 16,
+  "seen_keys": [
+    "crash:IndexError@parse_message:75",
+    "crash:IndexError@parse_message:77",
+    "timeout"
+  ],
+  "findings": [
+    {
+      "key": "crash:IndexError@parse_message:75",
+      "original_index": 8,
+      "file": "crash:IndexError@parse_message:75#8.json",
+      "stable": true
+    },
+    {
+      "key": "crash:IndexError@parse_message:77",
+      "original_index": 9,
+      "file": "crash:IndexError@parse_message:77#9.json",
+      "stable": true
+    },
+    {
+      "key": "timeout",
+      "original_index": 10,
+      "file": "timeout#10.json",
+      "stable": true
+    }
+  ]
+}

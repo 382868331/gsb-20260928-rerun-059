@@ -8,8 +8,17 @@ Wire format:
   payload: payload_length bytes
 
 The parser deliberately rejects malformed input with ParseReject.  It contains
-one seeded, project-owned defect: a payload whose first byte is 0xff causes an
-out-of-bounds table lookup.  There are intentionally no external targets.
+three seeded, project-owned defects:
+
+* ``operation-table``: first payload byte 0xff indexes the operation table out
+  of bounds (IndexError).
+* ``channel-table``: first payload byte in 1..4 with second payload byte 0xfe
+  indexes a separate channel table out of bounds (also IndexError, but a
+  different defect location).
+* ``timing-stall``: flags 0x77 sleeps past the normal harness timeout; it is a
+  timing-related defect reported as a timeout rather than a crash.
+
+There are intentionally no external targets.
 """
 
 from __future__ import annotations
@@ -25,6 +34,15 @@ _OPERATIONS = (
     b"DATA",
     b"SYNC",
 )
+_CHANNELS = (
+    "alpha",
+    "beta",
+    "gamma",
+)
+
+# The timing defect is intentionally slower than a tight harness timeout but
+# fast enough for a normal campaign timeout.
+TIMING_STALL_SECONDS = 1.5
 
 
 def parse_message(data: bytes) -> dict[str, object]:
@@ -41,16 +59,26 @@ def parse_message(data: bytes) -> dict[str, object]:
     payload_length = int.from_bytes(data[4:6], "big")
     if len(data) != _HEADER_SIZE + payload_length:
         raise ParseReject("rejected payload length mismatch")
+
+    if flags == 0x77:
+        import time
+
+        time.sleep(TIMING_STALL_SECONDS)
+
     payload = bytes(data[_HEADER_SIZE:])
     operation = b""
+    channel = ""
     if payload:
         operation_byte = payload[0]
         if operation_byte > 4 and operation_byte != 0xFF:
             raise ParseReject("unknown operation")
         operation = _OPERATIONS[payload[0] - 1]
+        if payload_length >= 2 and 1 <= operation_byte <= 4:
+            channel = _CHANNELS[payload[1] - 1]
     return {
         "version": version,
         "flags": flags,
         "payload": payload,
         "operation": operation,
+        "channel": channel,
     }

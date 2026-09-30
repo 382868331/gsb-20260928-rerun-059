@@ -18,6 +18,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=float)
     parser.add_argument("--wall-time", type=float)
     parser.add_argument("--output", default="results/latest")
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Ignore an existing campaign checkpoint in the output directory",
+    )
     return parser
 
 
@@ -36,6 +41,12 @@ def main(argv: list[str] | None = None) -> int:
         args.output,
         seed,
     )
+    if args.fresh:
+        campaign.next_index = 0
+        campaign.prior_executed = 0
+        campaign.resumed = False
+        campaign._seen.clear()
+        campaign.findings.clear()
     summary = campaign.run()
     print(
         f"seed={summary.seed} cases={summary.cases_executed} "

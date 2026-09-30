@@ -5,8 +5,8 @@
   "local_only": true,
   "failure_policy": {
     "rejected": "expected parser rejection, not a finding",
-    "crash": "reduce while preserving exception type",
-    "timeout": "separate timeout finding; never merge with crashes",
+    "crash": "group by exception type plus defect location; reduce while preserving exception type, defect location and key byte conditions",
+    "timeout": "separate timing-related finding; repeat trials and record reproduction rate; never merge with crashes",
     "runner_error": "preserve current sample and abnormal process exit code"
   },
   "default_budget": {

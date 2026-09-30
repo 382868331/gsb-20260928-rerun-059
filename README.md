@@ -5,31 +5,57 @@
 ## 结构
 
 - `goals/simple_message.json`：研究目标、目标解析器和失败分类策略。
-- `targets/simple_message.py`：项目自带的二进制消息解析器及一个受控本地缺陷。
-- `proto_robust/generator.py`：固定种子的语法输入与结构化变异生成器。
-- `proto_robust/runner.py`：独立进程执行、超时终止、异常退出回收。
-- `proto_robust/reducer.py`：保持同一种失败的输入缩减。
-- `proto_robust/fuzzer.py`：预算控制、去重、失败样本和摘要落盘。
+- `targets/simple_message.py`：项目自带的二进制消息解析器及三个受控本地缺陷。
+- `proto_robust/generator.py`：固定种子的语法输入与结构化变异生成器，内置定向样本。
+- `proto_robust/runner.py`：独立进程执行、超时终止、异常退出回收，并提取缺陷位置。
+- `proto_robust/stability.py`：按异常类型 + 缺陷位置 + 关键条件判定同一种失败，并保存重复试验证据。
+- `proto_robust/reducer.py`：保持同一种失败的输入缩减，逐步记录接受理由。
+- `proto_robust/fuzzer.py`：预算控制、去重分组、失败样本、活动检查点和摘要落盘。
 - `results/`：实验输出，默认运行不与目标和生成逻辑混放。
 
-## 失败语义
+## 失败语义与分组
 
-解析器主动抛出 `ParseReject` 归为 `rejected`，只代表拒绝畸形输入，不算健壮性缺陷。未预期异常归为 `crash`，超时归为 `timeout`，子进程异常退出归为 `runner_error`。缩减崩溃时要求异常类型仍相同，因此不会把崩溃、拒绝或超时混为一类。
+解析器主动抛出 `ParseReject` 归为 `rejected`，只代表拒绝畸形输入，不算健壮性缺陷。未预期异常归为 `crash`，超时归为 `timeout`，子进程异常退出归为 `runner_error`。
+
+多个同类异常会被同时追踪：崩溃签名不仅包含异常类型，还包含缺陷所在文件、函数和行号，因此两个都抛出 `IndexError` 但位于不同代码位置的人工缺陷会分成独立发现。
+
+## 内置缺陷
+
+1. `operation-table`（索引 8，`534d01000001ff`）：payload 首字节 `ff` 把操作表下标算成 254，`IndexError`。
+2. `channel-table`（索引 9，`534d0100000201fe`）：首字节是合法操作、第二字节 `fe` 越界访问通道表，`IndexError`，与第一个缺陷位置不同。
+3. `timing-stall`（索引 10，`534d01000000` + flags `77`）：解析器在该 flags 下睡眠超过紧超时，表现为时序相关超时。
+
+## 缩减语义
+
+缩减不只是保持异常类型。每个候选输入都会重新执行，并同时确认：
+
+- 异常类型仍相同；
+- 异常仍在原始缺陷位置（文件、函数、行号）抛出；
+- 触发缺陷的关键字节条件（如操作表缺陷的 offset 6=`ff`，通道表缺陷的 offset 7=`fe`）仍满足。
+
+这样可以避免把一个复杂缺陷缩成另一个只抛出相同异常的简单问题。每一步接受的缩减都会在样本 JSON 的 `reduction_steps` 中留下动作、结果十六进制、命中次数/试验次数和文字理由；原始样本始终单独保存在 `*.original.bin`。
+
+## 偶发失败
+
+新失败先重复试验（崩溃默认 5 次，超时默认 2 次），所有单次结果都写入 `confirmation.trials`，并记录命中数、试验数和复现率。一次重复没出现不会删除样本：复现率低于 1/3 时仍保留原始样本与证据，只是标记 `stable=false` 且不做缩减。缩减阶段的每个候选也要多次复现（多数命中才接受）。
+
+## 预算、检查点与恢复
+
+执行数量达到预算即标记 `budget_exhausted=true` 并停止。每个用例执行后都原子写入 `campaign.checkpoint.json`，记录下一个待执行索引、累计执行数和已发现签名。再次用相同 `--output` 运行会自动从检查点恢复：原始样本、样本 JSON 与每一步缩减理由都保留，新运行只对新增用例计费，摘要中以 `resumed=true` 标识。加 `--fresh` 可忽略旧检查点。
 
 ## 运行
 
 ```bash
-python -m proto_robust.cli --goal goals/simple_message.json --output results/seed-20260929
+python -m proto_robust.cli --goal goals/simple_message.json --output results/seed-20260930 --timeout 0.5
 ```
 
-固定种子和生成器顺序保证同一命令可重复。发现失败后，系统先保存原始样本，再执行缩减，并保存：
+超时取 0.5 秒时，时序缺陷（解析器睡眠 1.5 秒）可被检出；宽松超时下它会表现为正常返回。固定种子和生成器顺序保证同一命令可重复。发现失败后保存：
 
-- `*.original.bin`：触发失败的当前原始输入。
-- `*.minimized.bin`：保持同类失败的缩小输入。
-- `*.json`：签名、索引、十六进制内容和关键字节位置。
-- `campaign.json`：种子、预算、执行数量和发现列表。
-
-内置缺陷可缩小到 `534d01000001ff`，即合法 SM 头后仅一个 payload 字节 `ff`；该字节被错误当作操作表下标。
+- `<签名>#<索引>.original.bin`：触发失败的原始输入。
+- `<签名>#<索引>.minimized.bin`：保持同类失败与关键条件的缩小输入。
+- `<签名>#<索引>.json`：签名（含缺陷位置与关键条件）、复现证据、每步缩减理由、关键字节位置。
+- `campaign.checkpoint.json`：可恢复的活动状态。
+- `campaign.json`：种子、预算、执行数量、预算耗尽/恢复标记和发现列表。
 
 ## 测试
 
@@ -37,4 +63,6 @@ python -m proto_robust.cli --goal goals/simple_message.json --output results/see
 python -m unittest discover -s tests -v
 ```
 
-系统不会访问外部目标；新增协议时新增目标模块、目标文件和生成器即可复用预算、隔离执行、签名去重、缩减与样本保存流程。
+测试覆盖：两个同抛 `IndexError` 但位置不同的人工解析缺陷被分别分组；第二个缺陷的缩减保持原缺陷行与关键字节；一个交替失败的目标验证偶发失败保留全部重复试验证据；一次小预算运行在预算耗尽后经恢复继续发现时序超时，且原始样本和每步缩减理由仍在。
+
+系统不会访问外部目标；新增协议时新增目标模块、目标文件和生成器即可复用预算、隔离执行、签名分组、复现证据、缩减与样本保存流程。

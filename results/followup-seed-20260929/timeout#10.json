@@ -1,0 +1,86 @@
+{
+  "signature": {
+    "outcome": "timeout",
+    "exception_type": "Timeout",
+    "message": "worker exceeded time budget",
+    "fault_file": "",
+    "fault_function": "",
+    "fault_line": 0,
+    "key_conditions": [],
+    "key": "timeout"
+  },
+  "original_index": 10,
+  "attempts": 15,
+  "stable": true,
+  "confirmation": {
+    "hits": 2,
+    "runs": 2,
+    "reproduction_rate": 1.0,
+    "trials": [
+      {
+        "outcome": "timeout",
+        "exception_type": "Timeout",
+        "fault_file": "",
+        "fault_function": "",
+        "fault_line": 0,
+        "duration": 0.5
+      },
+      {
+        "outcome": "timeout",
+        "exception_type": "Timeout",
+        "fault_file": "",
+        "fault_function": "",
+        "fault_line": 0,
+        "duration": 0.5
+      }
+    ]
+  },
+  "created_at": 1790741484.16295,
+  "original_hex": "534d01770000",
+  "minimized_hex": "534d01770000",
+  "minimized_size": 6,
+  "critical_byte_offsets": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "reduction_steps": [
+    {
+      "step": 0,
+      "action": "baseline",
+      "hex": "534d01770000",
+      "size": 6,
+      "accepted": true,
+      "hits": 3,
+      "runs": 3,
+      "reason": "original sample re-run to confirm defect type, location and key conditions",
+      "trials": [
+        {
+          "outcome": "timeout",
+          "exception_type": "Timeout",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "duration": 0.5
+        },
+        {
+          "outcome": "timeout",
+          "exception_type": "Timeout",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "duration": 0.5
+        },
+        {
+          "outcome": "timeout",
+          "exception_type": "Timeout",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "duration": 0.5
+        }
+      ]
+    }
+  ]
+}
