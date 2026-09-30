@@ -1,0 +1,74 @@
+{
+  "signature": {
+    "outcome": "crash",
+    "exception_type": "IndexError",
+    "message": "timing state index 1 out of range",
+    "site": "multi_defect.py:103",
+    "condition": "index:1",
+    "key": "crash:IndexError@multi_defect.py:103#index:1"
+  },
+  "original_index": 14,
+  "generated_label": "timing-and-defect-sweep",
+  "attempts": 44,
+  "created_at": 1790742001.5141115,
+  "original_hex": "534d01090000",
+  "minimized_hex": "534d01090000",
+  "minimized_size": 6,
+  "critical_byte_offsets": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "reduction_done": true,
+  "repro": {
+    "hits": 2,
+    "trials": 4,
+    "rate": 0.5,
+    "stable": false,
+    "outcomes": [
+      "crash:IndexError@multi_defect.py:103",
+      "ok:@",
+      "crash:IndexError@multi_defect.py:103",
+      "ok:@"
+    ]
+  },
+  "reduction_steps": [
+    {
+      "phase": "byte-replace",
+      "action": "offset 3: 9 -> 0",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/4 (ok:@#, ok:@#, ok:@#, ok:@#)",
+      "candidate_hex": "534d01000000",
+      "hits": 0,
+      "trials": 4
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 3: 9 -> 1",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/4 (ok:@#, ok:@#, ok:@#, ok:@#)",
+      "candidate_hex": "534d01010000",
+      "hits": 0,
+      "trials": 4
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 3: 9 -> 2",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/4 (ok:@#, ok:@#, ok:@#, ok:@#)",
+      "candidate_hex": "534d01020000",
+      "hits": 0,
+      "trials": 4
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 3: 9 -> 4",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/4 (ok:@#, ok:@#, ok:@#, ok:@#)",
+      "candidate_hex": "534d01040000",
+      "hits": 0,
+      "trials": 4
+    }
+  ]
+}

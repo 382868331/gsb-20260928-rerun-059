@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from importlib import import_module
 import multiprocessing as mp
+import os
+import re
 import time
+import traceback
 from typing import Any, Callable
 
 from proto_robust.models import Outcome, ParseReject, TargetResult
@@ -14,6 +17,45 @@ def load_callable(dotted_name: str) -> Callable[[bytes], Any]:
     if not callable(function):
         raise TypeError(f"{dotted_name} is not callable")
     return function
+
+
+def raise_site(exc: BaseException, target_module: str) -> str:
+    """Return a stable location tag for the deepest frame inside the target module."""
+    target_file = None
+    module = None
+    try:
+        module = import_module(target_module)
+        target_file = os.path.normcase(getattr(module, "__file__", "") or "")
+    except Exception:
+        target_file = ""
+    fallback = f"{type(exc).__name__}"
+    frames = traceback.extract_tb(exc.__traceback__)
+    for frame in reversed(frames):
+        if target_file and frame.filename and os.path.normcase(frame.filename) == target_file:
+            return f"{os.path.basename(frame.filename)}:{frame.lineno}"
+    if frames:
+        frame = frames[-1]
+        return f"{os.path.basename(frame.filename)}:{frame.lineno}"
+    return fallback
+
+
+def failure_condition(exception_type: str, message: str) -> str:
+    """Derive a stable key-condition fingerprint from an exception message.
+
+    For boundary failures the concrete offending index identifies the
+    trigger; reducing a sample must keep that same condition, not merely
+    raise the same exception somewhere on the same line.
+    """
+    if not message:
+        return ""
+    lowered = message.lower()
+    numbers = re.findall(r"-?\d+", lowered)
+    if "index" in lowered and numbers:
+        return f"index:{numbers[0]}"
+    if "key" in lowered and numbers:
+        return f"key:{numbers[0]}"
+    # Fallback: a short stable token of the message shape.
+    return re.sub(r"\s+", " ", lowered.strip())[:80]
 
 
 def run_isolated(target: Callable[[bytes], Any], data: bytes, timeout: float) -> TargetResult:
@@ -126,6 +168,7 @@ class IsolatedWorker:
 
 def _persistent_worker(conn, target_name: str) -> None:
     target = load_callable(target_name)
+    module_name = target_name.rsplit(".", 1)[0]
     while True:
         try:
             data = conn.recv()
@@ -134,9 +177,23 @@ def _persistent_worker(conn, target_name: str) -> None:
         try:
             target(data)
         except ParseReject as exc:
-            result = TargetResult(Outcome.REJECTED, 0.0, type(exc).__name__, str(exc))
+            result = TargetResult(
+                Outcome.REJECTED,
+                0.0,
+                type(exc).__name__,
+                str(exc),
+                site=raise_site(exc, module_name),
+                condition=failure_condition(type(exc).__name__, str(exc)),
+            )
         except Exception as exc:
-            result = TargetResult(Outcome.CRASH, 0.0, type(exc).__name__, str(exc))
+            result = TargetResult(
+                Outcome.CRASH,
+                0.0,
+                type(exc).__name__,
+                str(exc),
+                site=raise_site(exc, module_name),
+                condition=failure_condition(type(exc).__name__, str(exc)),
+            )
         else:
             result = TargetResult(Outcome.OK, 0.0)
         try:
@@ -146,12 +203,31 @@ def _persistent_worker(conn, target_name: str) -> None:
 
 
 def _worker(conn, target: Callable[[bytes], Any], data: bytes) -> None:
+    module_name = getattr(target, "__module__", "")
     try:
         target(data)
     except ParseReject as exc:
-        conn.send(TargetResult(Outcome.REJECTED, 0.0, type(exc).__name__, str(exc)))
+        conn.send(
+            TargetResult(
+                Outcome.REJECTED,
+                0.0,
+                type(exc).__name__,
+                str(exc),
+                site=raise_site(exc, module_name),
+                condition=failure_condition(type(exc).__name__, str(exc)),
+            )
+        )
     except Exception as exc:  # Defects are reported, not raised through the harness.
-        conn.send(TargetResult(Outcome.CRASH, 0.0, type(exc).__name__, str(exc)))
+        conn.send(
+            TargetResult(
+                Outcome.CRASH,
+                0.0,
+                type(exc).__name__,
+                str(exc),
+                site=raise_site(exc, module_name),
+                condition=failure_condition(type(exc).__name__, str(exc)),
+            )
+        )
     else:
         conn.send(TargetResult(Outcome.OK, 0.0))
     finally:

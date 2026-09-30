@@ -1,0 +1,19 @@
+{
+  "name": "multi-defect-grouping-reduction",
+  "description": "Three project-owned seeded defects: two parser defects raise identical IndexError at different sites, plus an ordering-dependent intermittent timing defect. Used to verify same-exception grouping, site-preserving reduction, repeated-trial evidence, and budget-exhaustion resume.",
+  "target": "targets.multi_defect.parse_multi",
+  "local_only": true,
+  "failure_policy": {
+    "rejected": "expected parser rejection, not a finding",
+    "crash": "group by exception type plus raise site; reduce while preserving both and the key condition",
+    "timeout": "separate timeout finding; never merge with crashes",
+    "runner_error": "preserve current sample and abnormal process exit code",
+    "flaky": "repeat trials and record hits/trials; never discard after one failed reproduction",
+    "resume": "original samples, per-step reduction reasons and the generator index are reloaded from the checkpoint"
+  },
+  "default_budget": {
+    "seed": 20260929,
+    "max_cases": 64,
+    "timeout_seconds": 1.0
+  }
+}

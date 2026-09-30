@@ -1,0 +1,99 @@
+{
+  "signature": {
+    "outcome": "crash",
+    "exception_type": "IndexError",
+    "message": "operation table index 4 out of range",
+    "site": "multi_defect.py:73",
+    "condition": "index:4",
+    "key": "crash:IndexError@multi_defect.py:73#index:4"
+  },
+  "original_index": 8,
+  "generated_label": "timing-and-defect-sweep",
+  "attempts": 15,
+  "created_at": 1790742001.2289686,
+  "original_hex": "534d01020001fe",
+  "minimized_hex": "534d01020001fe",
+  "minimized_size": 7,
+  "critical_byte_offsets": [
+    0,
+    1,
+    2,
+    3,
+    6
+  ],
+  "reduction_done": true,
+  "repro": {
+    "hits": 1,
+    "trials": 1,
+    "rate": 1.0,
+    "stable": true,
+    "outcomes": [
+      "crash:IndexError@multi_defect.py:73#index:4"
+    ]
+  },
+  "reduction_steps": [
+    {
+      "phase": "prefix-trim",
+      "action": "drop bytes after offset 6",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/1 (ok:@#)",
+      "candidate_hex": "534d01020000",
+      "hits": 0,
+      "trials": 1
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 3: 2 -> 0",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/1 (ok:@#)",
+      "candidate_hex": "534d01000001fe",
+      "hits": 0,
+      "trials": 1
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 3: 2 -> 1",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/1 (ok:@#)",
+      "candidate_hex": "534d01010001fe",
+      "hits": 0,
+      "trials": 1
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 6: 254 -> 0",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/1 (crash:IndexError@multi_defect.py:74#tuple index out of range)",
+      "candidate_hex": "534d0102000100",
+      "hits": 0,
+      "trials": 1
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 6: 254 -> 1",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/1 (crash:IndexError@multi_defect.py:74#tuple index out of range)",
+      "candidate_hex": "534d0102000101",
+      "hits": 0,
+      "trials": 1
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 6: 254 -> 2",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/1 (crash:IndexError@multi_defect.py:74#tuple index out of range)",
+      "candidate_hex": "534d0102000102",
+      "hits": 0,
+      "trials": 1
+    },
+    {
+      "phase": "byte-replace",
+      "action": "offset 6: 254 -> 4",
+      "accepted": false,
+      "reason": "rejected: original failure+site reproduced only 0/1 (crash:IndexError@multi_defect.py:74#tuple index out of range)",
+      "candidate_hex": "534d0102000104",
+      "hits": 0,
+      "trials": 1
+    }
+  ]
+}

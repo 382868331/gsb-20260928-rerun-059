@@ -1,0 +1,32 @@
+{
+  "seed": 20260929,
+  "target": "targets.multi_defect.parse_multi",
+  "cases_executed": 32,
+  "executions": 120,
+  "findings": 3,
+  "duration": 0.07692338002379984,
+  "status": "completed",
+  "next_index": 42,
+  "finding_records": [
+    {
+      "key": "crash:IndexError@multi_defect.py:73#index:4",
+      "file": "crash:IndexError@multi_defect.py:73#index:4.json",
+      "reduction_done": true
+    },
+    {
+      "key": "crash:IndexError@multi_defect.py:84#index:2",
+      "file": "crash:IndexError@multi_defect.py:84#index:2.json",
+      "reduction_done": true
+    },
+    {
+      "key": "crash:IndexError@multi_defect.py:103#index:1",
+      "file": "crash:IndexError@multi_defect.py:103#index:1.json",
+      "reduction_done": true
+    }
+  ],
+  "finding_files": [
+    "crash:IndexError@multi_defect.py:73#index:4.json",
+    "crash:IndexError@multi_defect.py:84#index:2.json",
+    "crash:IndexError@multi_defect.py:103#index:1.json"
+  ]
+}

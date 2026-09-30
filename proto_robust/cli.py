@@ -17,6 +17,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cases", type=int)
     parser.add_argument("--timeout", type=float)
     parser.add_argument("--wall-time", type=float)
+    parser.add_argument("--max-executions", type=int, help="Total isolated executions including probes and reduction trials")
+    parser.add_argument("--confirm-trials", type=int, default=4)
+    parser.add_argument("--resume", action="store_true", help="Resume an interrupted campaign from its checkpoint")
     parser.add_argument("--output", default="results/latest")
     return parser
 
@@ -30,16 +33,19 @@ def main(argv: list[str] | None = None) -> int:
     seed = args.seed if args.seed is not None else 20260929
     cases = args.cases if args.cases is not None else 128
     timeout = args.timeout if args.timeout is not None else 1.0
+    budget = Budget(cases, timeout, args.wall_time, args.max_executions)
     campaign = FuzzingCampaign(
         target,
-        Budget(cases, timeout, args.wall_time),
+        budget,
         args.output,
         seed,
+        confirm_trials=args.confirm_trials,
     )
-    summary = campaign.run()
+    summary = campaign.run(resume=args.resume)
     print(
-        f"seed={summary.seed} cases={summary.cases_executed} "
-        f"findings={summary.findings} output={summary.output_dir}"
+        f"seed={summary.seed} cases={summary.cases_executed} executions={summary.executions} "
+        f"findings={summary.findings} status={summary.status} next_index={summary.next_index} "
+        f"output={summary.output_dir}"
     )
     return 0
 

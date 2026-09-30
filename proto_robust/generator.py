@@ -29,8 +29,31 @@ class SimpleMessageGenerator:
         if index < 8:
             payload = bytes([index]) if index else b""
             label = "direct-operation"
-        elif index < 24:
-            payload = bytes([(index - 8) % 256])
+        elif index < 32:
+            # Deterministic sequence covering both same-exception defects
+            # and both ARM/FIRE message orderings.
+            sequence = (
+                (2, 0xFE),  # defect A trigger: operation-table overrun
+                (3, 0xFD),  # defect B trigger: length-class overrun
+                (7, 0x00),  # ARM
+                (9, 0x00),  # FIRE after ARM: correct ordering, succeeds
+                (2, 0xFE),  # intervening traffic resets parser state
+                (9, 0x00),  # FIRE without ARM: reverse ordering, defect C
+                (9, 0x00),  # repeated out-of-order FIRE: intermittent, then crash
+                (7, 0x00),  # ARM after FIRE
+            )
+            flag, probe = sequence[(index - 8) % len(sequence)]
+            payload = bytes([probe]) if probe else b""
+            framed = MAGIC + bytes([1, flag]) + (1 if probe else 0).to_bytes(2, "big") + payload
+            return GeneratedCase(index, "timing-and-defect-sweep", framed)
+        elif index < 48:
+            flag = (index - 32) % 16
+            probe = (0xFE, 0xFD)[(index - 32) // 16 % 2]
+            payload = bytes([probe])
+            framed = MAGIC + bytes([1, flag]) + (1).to_bytes(2, "big") + payload
+            return GeneratedCase(index, "flag-and-probe-sweep", framed)
+        elif index < 56:
+            payload = bytes([(index - 40) % 256])
             label = "operation-byte-sweep"
         else:
             payload = self._mutated_payload(index)
