@@ -6,10 +6,13 @@ import traceback
 import time
 from typing import Any, Callable
 
-from proto_robust.models import Outcome, ParseReject, TargetResult
+from proto_robust.models import Outcome, ParseReject, SessionSequence, TargetResult
+
+FAILURE_OUTCOMES = {Outcome.CRASH, Outcome.TIMEOUT, Outcome.RUNNER_ERROR}
+RESTART_OUTCOMES = FAILURE_OUTCOMES | {Outcome.REJECTED}
 
 
-def load_callable(dotted_name: str) -> Callable[[bytes], Any]:
+def load_callable(dotted_name: str) -> Callable[[Any], Any]:
     module_name, function_name = dotted_name.rsplit(".", 1)
     function = getattr(import_module(module_name), function_name)
     if not callable(function):
@@ -41,33 +44,54 @@ def _fault_location(exc: BaseException) -> tuple[str, str, int]:
     return file_name, function_name, line_number
 
 
-def _key_conditions(exc: BaseException, file_name: str, line_number: int) -> tuple[tuple[int, int], ...]:
+def _key_conditions(exc: BaseException, file_name: str, line_number: int) -> tuple[tuple[int, int, int], ...]:
     """Extract the bytes that are the key condition of the seeded defect.
 
     Only the project-owned target is inspected this way, so the rules stay
-    explicit.  Each condition is an (offset, value) pair in the input.
+    explicit. Each condition is a (step, offset, value) triple in the sequence.
     """
     if not file_name.endswith("simple_message.py"):
         return ()
     tb = exc.__traceback__
-    frame = None
+    frames = []
     while tb is not None:
-        if tb.tb_lineno == line_number:
-            frame = tb.tb_frame
+        normalized = (tb.tb_frame.f_code.co_filename or "").replace(chr(92), "/")
+        if normalized.endswith("simple_message.py"):
+            frames.append(tb.tb_frame)
         tb = tb.tb_next
-    if frame is None:
+    if not frames:
         return ()
-    conditions: list[tuple[int, int]] = []
-    data = frame.f_locals.get("data")
+    frame = next((candidate for candidate in reversed(frames) if candidate.f_lineno == line_number), frames[-1])
+    sequence_frame = next((candidate for candidate in reversed(frames) if "step_index" in candidate.f_locals), None)
+    step_index = int(sequence_frame.f_locals["step_index"]) if sequence_frame is not None else -1
+    conditions: list[tuple[int, int, int]] = []
+    data = frame.f_locals.get("data") or frame.f_locals.get("message")
+    if data is None and sequence_frame is not None:
+        data = sequence_frame.f_locals.get("data") or sequence_frame.f_locals.get("message")
     if data is not None and len(data) >= 7 and data[6] == 0xFF:
-        conditions.append((6, 0xFF))
+        conditions.append((-1, 6, 0xFF))
     if data is not None and len(data) >= 8 and data[7] == 0xFE:
-        conditions.append((6, data[6]))
-        conditions.append((7, 0xFE))
+        conditions.append((-1, 6, data[6]))
+        conditions.append((-1, 7, 0xFE))
+    session = frame.f_locals.get("self")
+    if session is None and sequence_frame is not None:
+        session = sequence_frame.f_locals.get("self")
+    if session is not None and getattr(session, "armed", False):
+        arm_message = getattr(session, "arm_message", b"")
+        if len(arm_message) >= 7:
+            conditions.append((0, 6, arm_message[6]))
+        if data is not None and len(data) >= 7:
+            conditions.append((-1, 6, data[6]))
     return tuple(conditions)
 
 
-def run_isolated(target: Callable[[bytes], Any], data: bytes, timeout: float) -> TargetResult:
+def _execute_target(target: Callable[[Any], Any], payload: bytes | SessionSequence) -> Any:
+    if isinstance(payload, SessionSequence):
+        return target(payload)
+    return target(payload)
+
+
+def run_isolated(target: Callable[[Any], Any], data: bytes | SessionSequence, timeout: float) -> TargetResult:
     context = mp.get_context("spawn")
     parent_conn, child_conn = context.Pipe(duplex=False)
     process = context.Process(target=_worker, args=(child_conn, target, data))
@@ -106,7 +130,7 @@ def run_isolated(target: Callable[[bytes], Any], data: bytes, timeout: float) ->
 
 
 class IsolatedWorker:
-    """A reusable process boundary that is replaced after timeout or death."""
+    """A process boundary replaced after timeout, rejection, crash or death."""
 
     def __init__(self, target_name: str) -> None:
         self.target_name = target_name
@@ -115,7 +139,7 @@ class IsolatedWorker:
         self._parent = None
         self._start_worker()
 
-    def run(self, data: bytes, timeout: float) -> TargetResult:
+    def run(self, data: bytes | SessionSequence, timeout: float) -> TargetResult:
         if self._process is None or not self._process.is_alive() or self._parent is None:
             self._start_worker()
         start = time.monotonic()
@@ -146,10 +170,8 @@ class IsolatedWorker:
             self._close_current()
             return result
         result.duration = time.monotonic() - start
-        if result.outcome is Outcome.CRASH:
-            # Python exceptions are caught by the worker. A native crash would
-            # instead arrive as EOF; keeping the current sample remains valid.
-            pass
+        if result.outcome in RESTART_OUTCOMES:
+            self._close_current()
         return result
 
     def close(self) -> None:
@@ -183,7 +205,7 @@ def _persistent_worker(conn, target_name: str) -> None:
         except (EOFError, OSError):
             return
         try:
-            target(data)
+            _execute_target(target, data)
         except ParseReject as exc:
             file_name, function_name, line_number = _fault_location(exc)
             result = TargetResult(
@@ -206,9 +228,9 @@ def _persistent_worker(conn, target_name: str) -> None:
             return
 
 
-def _worker(conn, target: Callable[[bytes], Any], data: bytes) -> None:
+def _worker(conn, target: Callable[[Any], Any], data: bytes | SessionSequence) -> None:
     try:
-        target(data)
+        _execute_target(target, data)
     except ParseReject as exc:
         file_name, function_name, line_number = _fault_location(exc)
         conn.send(TargetResult(

@@ -6,7 +6,7 @@ from proto_robust.fuzzer import FuzzingCampaign
 from proto_robust.goals import ResearchGoal
 from proto_robust.models import Budget
 
-DEFAULT_TARGET = "targets.simple_message.parse_message"
+DEFAULT_TARGET = "targets.simple_message.replay_session"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,6 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         seed,
     )
     if args.fresh:
+        campaign.ignore_checkpoint = True
         campaign.next_index = 0
         campaign.prior_executed = 0
         campaign.resumed = False

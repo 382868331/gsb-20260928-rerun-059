@@ -8,7 +8,7 @@ Wire format:
   payload: payload_length bytes
 
 The parser deliberately rejects malformed input with ParseReject.  It contains
-three seeded, project-owned defects:
+four seeded, project-owned defects:
 
 * ``operation-table``: first payload byte 0xff indexes the operation table out
   of bounds (IndexError).
@@ -23,6 +23,7 @@ There are intentionally no external targets.
 
 from __future__ import annotations
 
+from proto_robust.models import SessionSequence
 from proto_robust.models import ParseReject
 
 MAGIC = b"SM"
@@ -43,6 +44,48 @@ _CHANNELS = (
 # The timing defect is intentionally slower than a tight harness timeout but
 # fast enough for a normal campaign timeout.
 TIMING_STALL_SECONDS = 1.5
+
+
+class MessageSession:
+    """Stateful adapter whose defect requires ordered prerequisite messages."""
+
+    def __init__(self) -> None:
+        self.armed = False
+        self.arm_message = b""
+
+    def send(self, data: bytes) -> dict[str, object]:
+        parsed = parse_message(data)
+        flags = int(parsed["flags"])
+        payload = bytes(parsed["payload"])
+        if flags == 0x40 and payload:
+            self.armed = True
+            self.arm_message = bytes(data)
+            return {"session_event": "armed", **parsed}
+        if self.armed and payload and payload[0] == 0x02:
+            self._commit_armed_operation(data)
+        return {"session_event": "processed", **parsed}
+
+    def _commit_armed_operation(self, message: bytes) -> None:
+        # The list lookup is deliberately only reachable after a prior arming
+        # message, and it is on a different line from the stateless defects.
+        guarded_channels = ("armed-only",)
+        operation = parse_message(message)["payload"][0]
+        guarded_channels[operation - 1]
+
+
+def replay_session(payload: bytes | SessionSequence) -> list[dict[str, object]]:
+    """Replay bytes once or every interaction from a fresh stateful session."""
+
+    if isinstance(payload, bytes | bytearray):
+        session = MessageSession()
+        return [session.send(bytes(payload))]
+    session = MessageSession()
+    results = []
+    for step_index, step in enumerate(payload.steps):
+        result = session.send(step.data)
+        result["step_index"] = step_index
+        results.append(result)
+    return results
 
 
 def parse_message(data: bytes) -> dict[str, object]:

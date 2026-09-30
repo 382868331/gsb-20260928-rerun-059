@@ -5,7 +5,7 @@ import unittest
 from proto_robust.generator import SimpleMessageGenerator
 from proto_robust.fuzzer import FuzzingCampaign
 from proto_robust.models import Budget
-from proto_robust.models import FailureSignature, Outcome, TargetResult
+from proto_robust.models import FailureSignature, Finding, Outcome, SessionSequence, TargetResult
 from proto_robust.reducer import reduce_case
 from proto_robust.runner import IsolatedWorker, run_isolated
 from proto_robust.stability import confirm_failure
@@ -32,14 +32,17 @@ def quiet_target(_: bytes) -> None:
     return None
 
 
-FLAKY_CALLS = {"count": 0}
+FLAKY_STATE = "/tmp/proto-robust-flaky-count"
 
 
 def flaky_target(_: bytes) -> None:
-    FLAKY_CALLS["count"] += 1
-    # Fails on alternating calls: an intermittent defect used to verify that a
-    # single successful repeat never deletes the sample.
-    if FLAKY_CALLS["count"] % 2 == 1:
+    from pathlib import Path
+
+    path = Path(FLAKY_STATE)
+    count = int(path.read_text()) if path.exists() else 0
+    count += 1
+    path.write_text(str(count))
+    if count % 2 == 1:
         raise ValueError("intermittent parse defect")
 
 
@@ -64,18 +67,19 @@ class SimpleMessageSystemTests(unittest.TestCase):
         original = b"SM\x01\x00\x00\x05\xffAAAA"
         signature = FailureSignature(Outcome.CRASH, "IndexError", "list index out of range")
 
-        def run(data: bytes) -> TargetResult:
+        def run(sequence: SessionSequence) -> TargetResult:
             try:
-                parse_message(data)
+                parse_message(sequence.flattened())
             except Exception as exc:  # ParseReject intentionally changes outcome.
                 outcome = Outcome.CRASH if type(exc).__name__ == "IndexError" else Outcome.REJECTED
                 return TargetResult(outcome, 0.0, type(exc).__name__, str(exc))
             return TargetResult(Outcome.OK, 0.0)
 
         report = reduce_case(original, signature, run, repeats=1)
-        minimized, critical_offsets = report.minimized, report.critical_byte_offsets
+        minimized = report.minimized.flattened()
         self.assertEqual(minimized, b"SM\x01\x00\x00\x01\xff")
-        self.assertIn(6, critical_offsets)
+        self.assertIn({"type": "byte", "interaction": 0, "offset": 6, "value": 255,
+                       "label": "message", "required": True}, report.critical_positions)
         self.assertTrue(report.steps)
         self.assertEqual(report.steps[0]["action"], "baseline")
         self.assertTrue(all(step["accepted"] for step in report.steps))
@@ -121,18 +125,25 @@ class SimpleMessageSystemTests(unittest.TestCase):
 
     def test_reducer_keeps_channel_defect_location_and_condition(self) -> None:
         original = b"SM\x01\x00\x00\x05\x01\xfeAAA"
-        first = run_isolated(parse_message, original, 1.0)
+        from targets.simple_message import replay_session
+
+        first = run_isolated(replay_session, SessionSequence.from_bytes(original), 1.0)
         signature = first.signature
         report = reduce_case(original, signature,
-                             lambda data: run_isolated(parse_message, data, 1.0), repeats=1)
-        self.assertEqual(report.minimized, b"SM\x01\x00\x00\x02\x01\xfe")
+                             lambda data: run_isolated(replay_session, data, 1.0), repeats=1)
+        self.assertEqual(report.minimized.flattened(), b"SM\x01\x00\x00\x02\x01\xfe")
         # The reduction must not have collapsed into the other IndexError site.
-        check = run_isolated(parse_message, report.minimized, 1.0)
+        check = run_isolated(replay_session, report.minimized, 1.0)
         self.assertEqual(check.fault_line, signature.fault_line)
-        self.assertIn(7, report.critical_byte_offsets)
+        self.assertTrue(any(
+            position["type"] == "byte" and position["offset"] == 7
+            for position in report.critical_positions
+        ))
 
     def test_flaky_failure_keeps_all_repeat_evidence(self) -> None:
-        FLAKY_CALLS["count"] = 0
+        from pathlib import Path
+
+        Path(FLAKY_STATE).write_text("0")
         signature = FailureSignature(Outcome.CRASH, "ValueError", "intermittent parse defect")
         worker = IsolatedWorker("tests.test_system.flaky_target")
         try:
@@ -155,7 +166,7 @@ class SimpleMessageSystemTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "run"
             campaign = FuzzingCampaign(
-                "targets.simple_message.parse_message",
+                "targets.simple_message.replay_session",
                 Budget(max_cases=10, timeout=0.5),
                 out,
                 20260929,
@@ -170,7 +181,7 @@ class SimpleMessageSystemTests(unittest.TestCase):
             self.assertTrue(summary_payload["budget_exhausted"])
 
             resumed = FuzzingCampaign(
-                "targets.simple_message.parse_message",
+                "targets.simple_message.replay_session",
                 Budget(max_cases=1, timeout=0.5),
                 out,
                 20260929,
@@ -202,12 +213,94 @@ class SimpleMessageSystemTests(unittest.TestCase):
             )
             # Original sample and every reduction step with a reason survive resume.
             self.assertEqual(operation["original_hex"], "534d01000001ff")
+            self.assertTrue(operation["original_sequence"]["fresh_session"])
             self.assertTrue(operation["reduction_steps"])
             self.assertTrue(all(step["reason"] for step in operation["reduction_steps"]))
             self.assertEqual(operation["confirmation"]["runs"], 5)
             self.assertEqual(operation["confirmation"]["hits"], 5)
             self.assertTrue(next(out.glob("crash*#8.original.bin")).exists())
             self.assertTrue(next(out.glob("crash*#9.original.bin")).exists())
+
+    def test_multi_session_sequence_reduction_preserves_required_state(self) -> None:
+        import tempfile
+
+        case = SimpleMessageGenerator(20260929).generate(11)
+        first = run_isolated(__import__("targets.simple_message", fromlist=["replay_session"]).replay_session,
+                             case.sequence, 1.0)
+        self.assertIs(first.outcome, Outcome.CRASH)
+        self.assertEqual(first.fault_function, "_commit_armed_operation")
+        report = reduce_case(
+            case.sequence,
+            first.signature,
+            lambda sequence: run_isolated(
+                __import__("targets.simple_message", fromlist=["replay_session"]).replay_session,
+                sequence, 1.0),
+            repeats=1,
+        )
+        self.assertEqual(report.minimized.interaction_count, 2)
+        self.assertEqual(report.minimized.steps[0].label, "enable-guarded-channel-state")
+        self.assertEqual(report.minimized.steps[1].label, "guarded-channel-trigger")
+        required = {(item["interaction"], item["label"]) for item in report.critical_positions
+                    if item["type"] == "interaction"}
+        self.assertIn((0, "enable-guarded-channel-state"), required)
+        self.assertIn((1, "guarded-channel-trigger"), required)
+        labels = [step.label for step in report.minimized.steps]
+        self.assertNotIn("removable-benign-interaction", labels)
+        with tempfile.NamedTemporaryFile("w", suffix=".session.json", delete=False) as handle:
+            handle.write(report.minimized.to_json())
+            replay_path = handle.name
+        import json
+        from pathlib import Path
+        replayed = SessionSequence.from_dict(json.loads(Path(replay_path).read_text(encoding="utf-8")))
+        self.assertEqual(replayed, report.minimized)
+
+    def test_unfinished_reduction_resumes_without_new_budget(self) -> None:
+        import json
+        import tempfile
+        from pathlib import Path
+
+        from targets.simple_message import replay_session
+
+        case = SimpleMessageGenerator(20260929).generate(11)
+        first = run_isolated(replay_session, case.sequence, 1.0)
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            finding = Finding(
+                first.signature,
+                case.sequence,
+                case.sequence,
+                11,
+                0,
+                stable=True,
+                reduction_completed=False,
+            )
+            finding.save(out)
+            (out / "campaign.checkpoint.json").write_text(json.dumps({
+                "seed": 20260929,
+                "target": "targets.simple_message.replay_session",
+                "next_index": 11,
+                "cases_executed": 11,
+                "findings": [{
+                    "key": first.signature.key(),
+                    "original_index": 11,
+                    "file": f"{finding.file_stem}.json",
+                    "stable": True,
+                    "reduction_completed": False,
+                }],
+            }), encoding="utf-8")
+            campaign = FuzzingCampaign(
+                "targets.simple_message.replay_session",
+                Budget(max_cases=0, timeout=1.0),
+                out,
+                20260929,
+            )
+            summary = campaign.run()
+            self.assertTrue(summary.resumed)
+            self.assertEqual(summary.cases_executed, 11)
+            payload = json.loads((out / f"{finding.file_stem}.json").read_text(encoding="utf-8"))
+            self.assertTrue(payload["reduction_completed"])
+            self.assertEqual(payload["minimized_sequence"]["interaction_count"], 2)
+            self.assertTrue(payload["reduction_steps"])
 
 
 if __name__ == "__main__":

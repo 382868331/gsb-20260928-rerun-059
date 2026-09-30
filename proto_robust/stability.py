@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from proto_robust.models import FailureSignature, Outcome, TargetResult
+from proto_robust.models import FailureSignature, Outcome, SessionSequence, TargetResult
 
 
 def same_failure(result: TargetResult, expected: FailureSignature) -> bool:
@@ -28,9 +28,13 @@ def same_failure(result: TargetResult, expected: FailureSignature) -> bool:
     return True
 
 
-def satisfies_key_conditions(data: bytes, expected: FailureSignature) -> bool:
+def satisfies_key_conditions(sequence: SessionSequence, expected: FailureSignature) -> bool:
     """Confirm the candidate still carries the original defect key condition."""
-    for offset, value in expected.key_conditions:
+    for step, offset, value in expected.key_conditions:
+        step_index = len(sequence.steps) - 1 if step == -1 else step
+        if not 0 <= step_index < len(sequence.steps):
+            return False
+        data = sequence.steps[step_index].data
         if offset >= len(data) or data[offset] != value:
             return False
     return True
@@ -59,22 +63,32 @@ class StabilityEvidence:
         }
 
 
-def trial_record(result: TargetResult) -> dict:
-    return {
+def trial_record(result: TargetResult, sequence: SessionSequence | None = None, attempt: int = 1) -> dict:
+    record = {
+        "attempt": attempt,
+        "fresh_session": True,
         "outcome": result.outcome.value,
+        "classification": result.outcome.value,
         "exception_type": result.exception_type,
         "fault_file": result.fault_file,
         "fault_function": result.fault_function,
         "fault_line": result.fault_line,
         "duration": result.duration,
     }
+    if sequence is not None:
+        record.update({
+            "interaction_count": sequence.interaction_count,
+            "sequence_size": sequence.size,
+            "order": [step.label for step in sequence.steps],
+        })
+    return record
 
 
-def confirm_failure(run, signature: FailureSignature, repeats: int) -> StabilityEvidence:
+def confirm_failure(run, signature: FailureSignature, repeats: int, sequence: SessionSequence | None = None) -> StabilityEvidence:
     evidence = StabilityEvidence(signature)
     for _ in range(max(1, repeats)):
         result = run()
-        evidence.trials.append(trial_record(result))
+        evidence.trials.append(trial_record(result, sequence, len(evidence.trials) + 1))
         if same_failure(result, signature):
             evidence.hits += 1
     return evidence

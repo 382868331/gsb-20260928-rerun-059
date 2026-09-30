@@ -1,7 +1,7 @@
 {
   "name": "bundled-simple-message-parser",
   "description": "Controlled mutation testing of the project-owned SM message parser; no external target is contacted.",
-  "target": "targets.simple_message.parse_message",
+  "target": "targets.simple_message.replay_session",
   "local_only": true,
   "failure_policy": {
     "rejected": "expected parser rejection, not a finding",
