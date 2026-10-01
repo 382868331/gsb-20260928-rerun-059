@@ -1,0 +1,23 @@
+{
+  "index": 0,
+  "label": "directed-commit-table-state-gated",
+  "start_state": "closed",
+  "steps": [
+    {
+      "name": "open",
+      "hex": "100000"
+    },
+    {
+      "name": "prepare-mode-1",
+      "hex": "200100"
+    },
+    {
+      "name": "select-bucket-2",
+      "hex": "300200"
+    },
+    {
+      "name": "commit-overread",
+      "hex": "50030100"
+    }
+  ]
+}

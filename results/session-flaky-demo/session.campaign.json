@@ -1,0 +1,18 @@
+{
+  "seed": 777,
+  "target": "targets.session_store.replay",
+  "replays": 6,
+  "findings": 1,
+  "duration": 0.5716317509650253,
+  "budget": {
+    "max_cases": 20,
+    "timeout": 1.0,
+    "wall_time": null
+  },
+  "budget_exhausted": false,
+  "resumed": false,
+  "next_index": 5,
+  "finding_files": [
+    "crash:ValueError@replay:180#armed_mode=append#4.json"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "seed": 777,
+  "replay": "targets.session_store.replay",
+  "describe": "targets.session_store.describe_state",
+  "budget": {
+    "max_cases": 20,
+    "timeout": 1.0,
+    "wall_time": null
+  },
+  "next_index": 5,
+  "replays": 6,
+  "indexes": [
+    4
+  ],
+  "seen_keys": [
+    "crash:ValueError@replay:180#armed/mode=append"
+  ],
+  "findings": [
+    {
+      "key": "crash:ValueError@replay:180#armed/mode=append",
+      "stem": "crash:ValueError@replay:180#armed_mode=append#4",
+      "stage": "kept_unstable",
+      "original_index": 4
+    }
+  ]
+}

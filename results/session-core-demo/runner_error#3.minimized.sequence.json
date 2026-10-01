@@ -1,0 +1,23 @@
+{
+  "index": 3,
+  "label": "directed-process-panic-after-select",
+  "start_state": "closed",
+  "steps": [
+    {
+      "name": "open",
+      "hex": "100000"
+    },
+    {
+      "name": "prepare-mode-1",
+      "hex": "200100"
+    },
+    {
+      "name": "select-bucket-1",
+      "hex": "300100"
+    },
+    {
+      "name": "panic",
+      "hex": "b00000"
+    }
+  ]
+}

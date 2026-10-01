@@ -1,0 +1,378 @@
+{
+  "key": "timeout",
+  "stem": "timeout#2",
+  "original_index": 2,
+  "stage": "reduced",
+  "signature": {
+    "outcome": "timeout",
+    "exception_type": "",
+    "message": "sequence exceeded per-replay time budget",
+    "fault_file": "",
+    "fault_function": "",
+    "fault_line": 0,
+    "state_path": "",
+    "step_key_conditions": [],
+    "key": "timeout"
+  },
+  "confirmation": {
+    "hits": 2,
+    "runs": 2,
+    "reproduction_rate": 1.0,
+    "trials": [
+      {
+        "outcome": "timeout",
+        "start_state": "closed",
+        "end_state": "armed",
+        "duration": 0.5020370209822431,
+        "exception_type": "",
+        "message": "sequence exceeded per-replay time budget",
+        "fault_file": "",
+        "fault_function": "",
+        "fault_line": 0,
+        "state_path": "",
+        "key_conditions": [],
+        "failing_step": 3,
+        "exit_code": null,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 6.119953468441963e-06
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 4.052009899169207e-06
+          },
+          {
+            "step": 2,
+            "name": "config-stall",
+            "hex": "700000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "armed",
+            "duration": 1.9510043784976006e-06
+          },
+          {
+            "step": 3,
+            "name": "timing",
+            "hex": "800000",
+            "outcome": "timeout",
+            "exception_type": "Timeout",
+            "message": "interaction exceeded the per-replay time budget",
+            "state_before": "armed",
+            "state_after": "armed",
+            "duration": 0.5020370209822431
+          }
+        ]
+      },
+      {
+        "outcome": "timeout",
+        "start_state": "closed",
+        "end_state": "armed",
+        "duration": 0.5011378200142644,
+        "exception_type": "",
+        "message": "sequence exceeded per-replay time budget",
+        "fault_file": "",
+        "fault_function": "",
+        "fault_line": 0,
+        "state_path": "",
+        "key_conditions": [],
+        "failing_step": 3,
+        "exit_code": null,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 5.969021003693342e-06
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 3.6800047382712364e-06
+          },
+          {
+            "step": 2,
+            "name": "config-stall",
+            "hex": "700000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "armed",
+            "duration": 1.920037902891636e-06
+          },
+          {
+            "step": 3,
+            "name": "timing",
+            "hex": "800000",
+            "outcome": "timeout",
+            "exception_type": "Timeout",
+            "message": "interaction exceeded the per-replay time budget",
+            "state_before": "armed",
+            "state_after": "armed",
+            "duration": 0.5011378200142644
+          }
+        ]
+      }
+    ]
+  },
+  "reduction": {
+    "minimized": {
+      "index": 2,
+      "label": "directed-timing-stall",
+      "start_state": "closed",
+      "steps": [
+        {
+          "name": "open",
+          "hex": "100000"
+        },
+        {
+          "name": "prepare-mode-1",
+          "hex": "200100"
+        },
+        {
+          "name": "config-stall",
+          "hex": "700000"
+        },
+        {
+          "name": "timing",
+          "hex": "800000"
+        }
+      ]
+    },
+    "attempts": 12,
+    "steps": [
+      {
+        "step": 0,
+        "action": "baseline",
+        "hits": 3,
+        "runs": 3,
+        "interactions": 4,
+        "sequence_hex": [
+          "100000",
+          "200100",
+          "700000",
+          "800000"
+        ],
+        "accepted": true,
+        "reason": "original sequence replayed from clean session start; state path and defect location confirmed",
+        "trials": [
+          {
+            "outcome": "timeout",
+            "start_state": "closed",
+            "end_state": "armed",
+            "duration": 0.501120158995036,
+            "exception_type": "",
+            "message": "sequence exceeded per-replay time budget",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 3,
+            "exit_code": null,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 5.661975592374802e-06
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-1",
+                "hex": "200100",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 4.050030838698149e-06
+              },
+              {
+                "step": 2,
+                "name": "config-stall",
+                "hex": "700000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 1.792039256542921e-06
+              },
+              {
+                "step": 3,
+                "name": "timing",
+                "hex": "800000",
+                "outcome": "timeout",
+                "exception_type": "Timeout",
+                "message": "interaction exceeded the per-replay time budget",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 0.501120158995036
+              }
+            ]
+          },
+          {
+            "outcome": "timeout",
+            "start_state": "closed",
+            "end_state": "armed",
+            "duration": 0.5014977909740992,
+            "exception_type": "",
+            "message": "sequence exceeded per-replay time budget",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 3,
+            "exit_code": null,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 5.9710000641644e-06
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-1",
+                "hex": "200100",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 4.04199818149209e-06
+              },
+              {
+                "step": 2,
+                "name": "config-stall",
+                "hex": "700000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 1.860025804489851e-06
+              },
+              {
+                "step": 3,
+                "name": "timing",
+                "hex": "800000",
+                "outcome": "timeout",
+                "exception_type": "Timeout",
+                "message": "interaction exceeded the per-replay time budget",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 0.5014977909740992
+              }
+            ]
+          },
+          {
+            "outcome": "timeout",
+            "start_state": "closed",
+            "end_state": "armed",
+            "duration": 0.5014028350124136,
+            "exception_type": "",
+            "message": "sequence exceeded per-replay time budget",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 3,
+            "exit_code": null,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 6.029964424669743e-06
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-1",
+                "hex": "200100",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 3.947003278881311e-06
+              },
+              {
+                "step": 2,
+                "name": "config-stall",
+                "hex": "700000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 1.835986040532589e-06
+              },
+              {
+                "step": 3,
+                "name": "timing",
+                "hex": "800000",
+                "outcome": "timeout",
+                "exception_type": "Timeout",
+                "message": "interaction exceeded the per-replay time budget",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 0.5014028350124136
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "baseline_hits": 3,
+    "baseline_runs": 3,
+    "complete": true
+  },
+  "stable": true
+}

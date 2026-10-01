@@ -1,0 +1,19 @@
+{
+  "name": "bundled-stateful-session-store",
+  "description": "Controlled multi-session-state robustness research on the project-owned session store; no external target is contacted.",
+  "target": "targets.session_store.replay",
+  "local_only": true,
+  "replay": "targets.session_store.replay",
+  "describe": "targets.session_store.describe_state",
+  "failure_policy": {
+    "rejected": "explicit malformed/state-invalid rejection, not a finding",
+    "crash": "group by exception type, defect location and required session state path; reduce while preserving state build-up, defect location and key interaction bytes",
+    "timeout": "separate timing finding; record the interaction in flight and every replay attempt",
+    "runner_error": "process abort/crash in a dedicated fresh worker; the next sequence starts from a clean session"
+  },
+  "default_budget": {
+    "seed": 20260929,
+    "max_cases": 128,
+    "timeout_seconds": 1.0
+  }
+}

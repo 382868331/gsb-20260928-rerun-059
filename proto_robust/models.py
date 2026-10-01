@@ -27,12 +27,16 @@ class FailureSignature:
     fault_function: str = ""
     fault_line: int = 0
     key_conditions: tuple[tuple[int, int], ...] = field(default_factory=tuple)
+    # Stateful sessions: the session state path that must be active for the
+    # defect to fire, plus structural (step_index, offset, value) key bytes.
+    state_path: str = ""
+    step_key_conditions: tuple[tuple[int, int, int], ...] = field(default_factory=tuple)
 
     def key(self) -> str:
         if self.outcome is Outcome.CRASH and self.exception_type:
-            if self.fault_function and self.fault_line:
-                return f"crash:{self.exception_type}@{self.fault_function}:{self.fault_line}"
-            return f"crash:{self.exception_type}"
+            location = f"@{self.fault_function}:{self.fault_line}" if self.fault_function and self.fault_line else ""
+            state = f"#{self.state_path}" if self.state_path else ""
+            return f"crash:{self.exception_type}{location}{state}"
         if self.outcome is Outcome.TIMEOUT:
             return "timeout"
         if self.outcome is Outcome.REJECTED:
@@ -51,6 +55,8 @@ class TargetResult:
     fault_function: str = ""
     fault_line: int = 0
     key_conditions: tuple[tuple[int, int], ...] = field(default_factory=tuple)
+    state_path: str = ""
+    step_key_conditions: tuple[tuple[int, int, int], ...] = field(default_factory=tuple)
 
     @property
     def signature(self) -> FailureSignature:
@@ -62,6 +68,8 @@ class TargetResult:
             self.fault_function,
             self.fault_line,
             tuple(self.key_conditions),
+            self.state_path,
+            tuple(self.step_key_conditions),
         )
 
 

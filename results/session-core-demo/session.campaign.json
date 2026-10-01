@@ -1,0 +1,21 @@
+{
+  "seed": 777,
+  "target": "targets.session_store.replay",
+  "replays": 126,
+  "findings": 4,
+  "duration": 13.406007204030175,
+  "budget": {
+    "max_cases": 200,
+    "timeout": 0.5,
+    "wall_time": null
+  },
+  "budget_exhausted": false,
+  "resumed": false,
+  "next_index": 4,
+  "finding_files": [
+    "crash:IndexError@replay:193#selected_mode=read_bucket=mirror#0.json",
+    "crash:IndexError@replay:143#open#1.json",
+    "timeout#2.json",
+    "runner_error#3.json"
+  ]
+}

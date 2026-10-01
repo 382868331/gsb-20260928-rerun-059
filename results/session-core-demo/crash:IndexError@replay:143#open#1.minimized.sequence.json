@@ -1,0 +1,15 @@
+{
+  "index": 1,
+  "label": "directed-mode-table-overread",
+  "start_state": "closed",
+  "steps": [
+    {
+      "name": "open",
+      "hex": "100000"
+    },
+    {
+      "name": "prepare-bad-mode",
+      "hex": "20fe00"
+    }
+  ]
+}

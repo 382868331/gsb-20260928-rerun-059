@@ -66,3 +66,59 @@ python -m unittest discover -s tests -v
 测试覆盖：两个同抛 `IndexError` 但位置不同的人工解析缺陷被分别分组；第二个缺陷的缩减保持原缺陷行与关键字节；一个交替失败的目标验证偶发失败保留全部重复试验证据；一次小预算运行在预算耗尽后经恢复继续发现时序超时，且原始样本和每步缩减理由仍在。
 
 系统不会访问外部目标；新增协议时新增目标模块、目标文件和生成器即可复用预算、隔离执行、签名分组、复现证据、缩减与样本保存流程。
+
+## 多会话状态序列（第二轮增强）
+
+第一轮面向单条无状态消息；协议故障往往需要一个输入序列跨多个会话状态才能触发。第二轮在不改动第一轮流程的前提下新增会话模式：
+
+- 研究输入是有序交互序列（`SessionSequence`），带显式会话起点（默认 `closed`），保存为独立 JSON，可随时用 `replay` 子命令从干净起点完整重放。
+- 目标 `targets/session_store.py` 是有状态的会话存储：`OPEN -> PREPARE -> SELECT -> COMMIT` 等命令逐步建态。状态门控缺陷 `commit-table` 只在 `selected/mode=read/bucket=mirror` 状态触发；同样的 COMMIT 帧在 `open/armed` 只是明确拒绝。
+- 每次复现都用全新 spawn 进程重放完整序列，并逐步记录交互名称、帧十六进制、状态前/后、结果与耗时（`confirmation.trials[].steps`）。因此超时、拒绝或崩溃后的工作进程不可能带着污染状态测试下一序列。
+
+### 失败分类
+
+超时（`timeout`）、明确拒绝（`rejected`，不算缺陷）、进程崩溃（`runner_error`，保留退出码）与未预期异常（`crash`）分别归类。崩溃签名包含异常类型、缺陷文件/函数/行号以及所需会话状态路径 `state/mode/bucket`，因此两个同为 `IndexError` 但位置或建态路径不同的缺陷不会合并。
+
+### 序列缩减语义
+
+缩减在两个轴上进行，每个候选都从干净会话起点重放并多次复现：
+
+- 删除非必需的前置/中间交互（保留完整会话起点和触发缺陷所必需的建态顺序）；
+- 下调单帧的键/载荷字节。
+
+接受条件同时检查异常类型、缺陷文件/函数/行号、会话状态路径和触发交互的命令/键字节。状态门控的 COMMIT 缺陷会删掉非必需的 SET 交互，但不会被缩成 `PREPARE` 处另一个位置的同类 `IndexError`。每一步接受都记录动作、命中/试验次数、完整候选序列与文字理由。
+
+### 间歇失败
+
+新用例最多做两次免费检测尝试（固定相反奇偶），保证偶发缺陷不会因第一次未命中而漏检。随后的确认尝试逐次编号（`confirm-0..n`），每次都是独立新进程；命中与未命中都写入证据。复现率达不到严格多数时，原始序列与全部尝试证据保留（`stage=kept_unstable`、`stable=false`），但不做缩减。
+
+### 预算暂停与可继续缩减
+
+检测、确认与缩减的每次重放都计入预算。确认或缩减中途预算耗尽时，活动检查点（`session.campaign.checkpoint.json`）记录：下一个待执行序列索引、累计重放数、已见签名，以及每个发现所处阶段（`confirming`/`reducing`/`reduced`/`kept_unstable`）和当前缩减器状态（当前最佳候选、已接受步骤）。用相同 `--output` 再次运行会继续未完成的确认/缩减：原始序列 `*.original.sequence.json` 与当前最小候选 `*.minimized.sequence.json` 始终分别保存，二者都能独立重放。
+
+### 运行
+
+```bash
+# 多会话状态序列活动（紧超时以检出时序缺陷）
+python -m proto_robust.cli session --goal goals/session_store.json \
+  --output results/session-core-demo --timeout 0.5
+
+# 只跑指定的生成序列索引
+python -m proto_robust.cli session --output results/demo \
+  --timeout 0.5 --indexes 0,1,2,3
+
+# 独立重放原始或最小序列
+python -m proto_robust.cli replay \
+  results/session-core-demo/<stem>.minimized.sequence.json --timeout 0.5
+
+# 第一轮的无状态消息模式保持不变
+python -m proto_robust.cli run --goal goals/simple_message.json \
+  --output results/seed-20260930 --timeout 0.5
+```
+
+发现产物（每个签名）：
+
+- `<签名>#<索引>.original.sequence.json`：触发失败的原始有序交互序列与会话起点。
+- `<签名>#<索引>.minimized.sequence.json`：保持同一缺陷、同一状态路径的当前最小候选（缩减暂停时也已保存）。
+- `<签名>#<索引>.json`：签名（含缺陷位置与状态路径）、每次尝试的完整交互证据、缩减步骤与理由、阶段标记。
+- `session.campaign.checkpoint.json` / `session.campaign.json`：可恢复活动状态与摘要。

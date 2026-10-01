@@ -5,42 +5,67 @@ import argparse
 from proto_robust.fuzzer import FuzzingCampaign
 from proto_robust.goals import ResearchGoal
 from proto_robust.models import Budget
+from proto_robust.session_campaign import SessionCampaign
+from proto_robust.session_runner import replay_sequence_isolated
+from proto_robust.sequences import SessionSequence
 
 DEFAULT_TARGET = "targets.simple_message.parse_message"
+DEFAULT_SESSION_REPLAY = "targets.session_store.replay"
+DEFAULT_SESSION_DESCRIBE = "targets.session_store.describe_state"
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run a deterministic local protocol robustness campaign")
-    parser.add_argument("--goal", help="JSON research goal; target and budget are read from it unless overridden")
-    parser.add_argument("--target", help="Dotted Python parser callable")
+    parser = argparse.ArgumentParser(description="Deterministic local protocol robustness research")
+    subparsers = parser.add_subparsers(dest="command")
+
+    run_parser = subparsers.add_parser("run", help="Run a single-message (stateless) robustness campaign")
+    _add_campaign_args(run_parser)
+    session = subparsers.add_parser("session", help="Run a multi-step stateful session campaign")
+    _add_campaign_args(session)
+    session.add_argument("--replay", default=DEFAULT_SESSION_REPLAY,
+                        help="Callable applied to each frame with the session dict")
+    session.add_argument("--describe", default=DEFAULT_SESSION_DESCRIBE,
+                        help="Callable returning the current session state label")
+    session.add_argument("--indexes", default="",
+                        help="Comma-separated generator indexes to limit the campaign")
+
+    replay = subparsers.add_parser("replay", help="Replay one saved sequence file independently")
+    replay.add_argument("sequence_file")
+    replay.add_argument("--replay-target", default=DEFAULT_SESSION_REPLAY)
+    replay.add_argument("--describe", default=DEFAULT_SESSION_DESCRIBE)
+    replay.add_argument("--timeout", type=float, default=1.0)
+
+    # Flat (no subcommand) invocation stays equivalent to the stateless run.
+    _add_campaign_args(parser)
+    return parser
+
+
+def _add_campaign_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--goal", help="JSON research goal; target and budget default from it unless overridden")
+    parser.add_argument("--target", help="Dotted Python parser callable (stateless mode)")
     parser.add_argument("--seed", type=int)
     parser.add_argument("--cases", type=int)
     parser.add_argument("--timeout", type=float)
     parser.add_argument("--wall-time", type=float)
     parser.add_argument("--output", default="results/latest")
-    parser.add_argument(
-        "--fresh",
-        action="store_true",
-        help="Ignore an existing campaign checkpoint in the output directory",
-    )
-    return parser
+    parser.add_argument("--fresh", action="store_true",
+                        help="Ignore an existing campaign checkpoint in the output directory")
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+def _campaign_options(args) -> tuple:
     goal = ResearchGoal.load(args.goal) if args.goal else None
-    target = args.target or (goal.target if goal else DEFAULT_TARGET)
-    if goal and not goal.local_only:
-        raise SystemExit("this research build refuses non-local goals")
     seed = args.seed if args.seed is not None else 20260929
     cases = args.cases if args.cases is not None else 128
     timeout = args.timeout if args.timeout is not None else 1.0
-    campaign = FuzzingCampaign(
-        target,
-        Budget(cases, timeout, args.wall_time),
-        args.output,
-        seed,
-    )
+    return goal, seed, cases, timeout
+
+
+def _run_stateless(args) -> int:
+    goal, seed, cases, timeout = _campaign_options(args)
+    target = args.target or (goal.target if goal else DEFAULT_TARGET)
+    if goal and not goal.local_only:
+        raise SystemExit("this research build refuses non-local goals")
+    campaign = FuzzingCampaign(target, Budget(cases, timeout, args.wall_time), args.output, seed)
     if args.fresh:
         campaign.next_index = 0
         campaign.prior_executed = 0
@@ -48,11 +73,58 @@ def main(argv: list[str] | None = None) -> int:
         campaign._seen.clear()
         campaign.findings.clear()
     summary = campaign.run()
-    print(
-        f"seed={summary.seed} cases={summary.cases_executed} "
-        f"findings={summary.findings} output={summary.output_dir}"
-    )
+    print(f"seed={summary.seed} cases={summary.cases_executed} "
+          f"findings={summary.findings} output={summary.output_dir}")
     return 0
+
+
+def _run_session(args) -> int:
+    goal, seed, cases, timeout = _campaign_options(args)
+    if goal and not goal.local_only:
+        raise SystemExit("this research build refuses non-local goals")
+    indexes_arg = getattr(args, "indexes", "") or ""
+    indexes = [int(part) for part in indexes_arg.split(",") if part.strip()] or None
+    campaign = SessionCampaign(
+        getattr(args, "replay", DEFAULT_SESSION_REPLAY),
+        getattr(args, "describe", DEFAULT_SESSION_DESCRIBE),
+        Budget(cases, timeout, args.wall_time),
+        args.output,
+        seed,
+        indexes=indexes,
+    )
+    if args.fresh:
+        campaign.next_index = 0
+        campaign.spent = 0
+        campaign.prior_spent = 0
+        campaign.resumed = False
+        campaign._seen.clear()
+        campaign.findings.clear()
+    summary = campaign.run()
+    print(f"seed={summary.seed} replays={summary.replays} "
+          f"findings={summary.findings} output={summary.output_dir}")
+    return 0
+
+
+def _replay(args) -> int:
+    sequence = SessionSequence.load(args.sequence_file)
+    result = replay_sequence_isolated(sequence, args.replay_target, args.describe, args.timeout)
+    print(f"start_state={result.start_state} end_state={result.end_state} outcome={result.outcome}")
+    for step in result.steps:
+        print(f"  #{step.step} {step.name} {step.state_before}->{step.state_after} "
+              f"{step.outcome} {step.exception_type}")
+    if result.state_path:
+        print(f"state_path={result.state_path} fault={result.fault_function}:{result.fault_line}")
+    return 0 if result.outcome == "ok" else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.command == "session":
+        return _run_session(args)
+    if args.command == "replay":
+        return _replay(args)
+    return _run_stateless(args)
 
 
 if __name__ == "__main__":

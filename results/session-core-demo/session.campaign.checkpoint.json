@@ -1,0 +1,50 @@
+{
+  "seed": 777,
+  "replay": "targets.session_store.replay",
+  "describe": "targets.session_store.describe_state",
+  "budget": {
+    "max_cases": 200,
+    "timeout": 0.5,
+    "wall_time": null
+  },
+  "next_index": 4,
+  "replays": 126,
+  "indexes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "seen_keys": [
+    "crash:IndexError@replay:143#open",
+    "crash:IndexError@replay:193#selected/mode=read/bucket=mirror",
+    "runner_error",
+    "timeout"
+  ],
+  "findings": [
+    {
+      "key": "crash:IndexError@replay:193#selected/mode=read/bucket=mirror",
+      "stem": "crash:IndexError@replay:193#selected_mode=read_bucket=mirror#0",
+      "stage": "reduced",
+      "original_index": 0
+    },
+    {
+      "key": "crash:IndexError@replay:143#open",
+      "stem": "crash:IndexError@replay:143#open#1",
+      "stage": "reduced",
+      "original_index": 1
+    },
+    {
+      "key": "timeout",
+      "stem": "timeout#2",
+      "stage": "reduced",
+      "original_index": 2
+    },
+    {
+      "key": "runner_error",
+      "stem": "runner_error#3",
+      "stage": "reduced",
+      "original_index": 3
+    }
+  ]
+}
