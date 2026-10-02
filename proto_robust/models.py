@@ -12,10 +12,15 @@ class Outcome(str, Enum):
     CRASH = "crash"
     TIMEOUT = "timeout"
     RUNNER_ERROR = "runner_error"
+    PREPARATION_ERROR = "preparation_error"
 
 
 class ParseReject(Exception):
     """A documented, non-robustness-failure parser rejection."""
+
+
+class SessionPreparationError(Exception):
+    """The environment or session could not be prepared for a comparison."""
 
 
 @dataclass(frozen=True)

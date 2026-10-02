@@ -12,7 +12,7 @@ import multiprocessing as mp
 import time
 from typing import Any
 
-from proto_robust.models import Outcome, ParseReject
+from proto_robust.models import Outcome, ParseReject, SessionPreparationError
 from proto_robust.runner import _fault_location, load_callable
 from proto_robust.sequences import Interaction, ReplayResult, SessionSequence, StepRecord
 
@@ -22,6 +22,18 @@ def _send_step(conn, target_replay: Any, session: dict, interaction: Interaction
     start = time.monotonic()
     try:
         target_replay(interaction.data, session, attempt_namespace)
+    except SessionPreparationError as exc:
+        file_name, function_name, line_number = _fault_location(exc)
+        record = {
+            "kind": Outcome.PREPARATION_ERROR.value,
+            "exception_type": type(exc).__name__,
+            "message": str(exc),
+            "file": file_name,
+            "function": function_name,
+            "line": line_number,
+            "state_path": "",
+            "keys": (),
+        }
     except ParseReject as exc:
         file_name, function_name, line_number = _fault_location(exc)
         record = {

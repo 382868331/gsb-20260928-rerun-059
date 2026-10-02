@@ -122,3 +122,31 @@ python -m proto_robust.cli run --goal goals/simple_message.json \
 - `<签名>#<索引>.minimized.sequence.json`：保持同一缺陷、同一状态路径的当前最小候选（缩减暂停时也已保存）。
 - `<签名>#<索引>.json`：签名（含缺陷位置与状态路径）、每次尝试的完整交互证据、缩减步骤与理由、阶段标记。
 - `session.campaign.checkpoint.json` / `session.campaign.json`：可恢复活动状态与摘要。
+
+## 双版本差异复演（第三轮增强）
+
+`compare` 子命令把同一条有序会话序列分别送到旧版和新版目标。每次有效比较都是两次独立新进程复跑，记录固定输入顺序、版本身份、各自会话起点、逐步输入顺序、实际结果和完整异常位置：
+
+```bash
+python -m proto_robust.cli compare \
+  results/session-core-demo/<stem>.original.sequence.json \
+  --old-replay targets.session_store.replay \
+  --new-replay targets.session_store_new.replay \
+  --output results/version-compare --timeout 0.5
+```
+
+差异条件支持：
+
+- `old_reproducible_new_absent`：旧版在原位置复现研究者选定故障，新版只出现正常完成或明确拒绝；新版若报任意其他崩溃、进程错误或超时，候选会被拒绝。
+- `different_location`：两版都触发故障，但必须分别命中预先选定的两个位置；同位置异常不算差异。
+- `preparation_error`：环境或会话准备未完成时归类为准备失败，不进入命中、拒绝或超时计数，也不能当作新版未命中。
+
+每个候选可单独配置有效尝试数量、命中即停、拒绝/超时/准备失败即停和所需命中率。证据中保留 `solo` 单独复跑与 `group` 成组缩减复跑，并汇总 `hit`、`rejected`、`timeout`、`preparation_failed` 的去向。预算按“成组复跑”计数；预算中止后用相同 `--output` 接续，已有尝试保留且不会重复计费。
+
+产物包括：
+
+- `original.sequence.json`：研究者提供的原始有序序列和起点。
+- `minimized.sequence.json`：保持双版本差异条件的当前最小候选，预算暂停时也可复演。
+- `final.sequence.json`：完成缩减后按最终策略独立成组复演的候选。
+- `differential.checkpoint.json`：差异条件、候选策略、每组成组/单独证据和已消耗尝试数。
+- `differential.json`：预算、恢复标记、版本身份、输入顺序和四类结果汇总。

@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import argparse
 
+from proto_robust.differential_campaign import DifferentialCampaign, condition_from_old_result
+from proto_robust.differential import VersionSpec
 from proto_robust.fuzzer import FuzzingCampaign
 from proto_robust.goals import ResearchGoal
 from proto_robust.models import Budget
+from proto_robust.session_campaign import signature_from_result
 from proto_robust.session_campaign import SessionCampaign
 from proto_robust.session_runner import replay_sequence_isolated
 from proto_robust.sequences import SessionSequence
@@ -34,6 +37,17 @@ def build_parser() -> argparse.ArgumentParser:
     replay.add_argument("--replay-target", default=DEFAULT_SESSION_REPLAY)
     replay.add_argument("--describe", default=DEFAULT_SESSION_DESCRIBE)
     replay.add_argument("--timeout", type=float, default=1.0)
+
+    compare = subparsers.add_parser("compare", help="Compare one sequence against old and new targets")
+    compare.add_argument("sequence_file")
+    compare.add_argument("--old-replay", default=DEFAULT_SESSION_REPLAY)
+    compare.add_argument("--new-replay", default="targets.session_store_new.replay")
+    compare.add_argument("--describe", default=DEFAULT_SESSION_DESCRIBE)
+    compare.add_argument("--old-identity", default="old")
+    compare.add_argument("--new-identity", default="new")
+    compare.add_argument("--difference", choices=("old_reproducible_new_absent", "different_location"),
+                        default="old_reproducible_new_absent")
+    _add_campaign_args(compare)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
     _add_campaign_args(parser)
@@ -124,7 +138,34 @@ def main(argv: list[str] | None = None) -> int:
         return _run_session(args)
     if args.command == "replay":
         return _replay(args)
+    if args.command == "compare":
+        return _compare(args)
     return _run_stateless(args)
+
+
+def _compare(args) -> int:
+    _goal, seed, pair_budget, timeout = _campaign_options(args)
+    sequence = SessionSequence.load(args.sequence_file)
+    old_version = VersionSpec(args.old_identity, args.old_replay, args.describe)
+    new_version = VersionSpec(args.new_identity, args.new_replay, args.describe)
+    old_result = replay_sequence_isolated(sequence, old_version.replay_name,
+                                           old_version.describe_name, timeout,
+                                           attempt_namespace="compare-setup-old")
+    new_result = replay_sequence_isolated(sequence, new_version.replay_name,
+                                          new_version.describe_name, timeout,
+                                          attempt_namespace="compare-setup-new")
+    new_signature = signature_from_result(new_result) if args.difference == "different_location" else None
+    condition = condition_from_old_result(
+        old_result, args.difference, old_version, new_version, new_signature
+    )
+    campaign = DifferentialCampaign(
+        sequence, condition, Budget(pair_budget, timeout, args.wall_time),
+        args.output, seed, fresh=args.fresh,
+    )
+    summary = campaign.run()
+    print(f"seed={summary.seed} pair_attempts={summary.pair_attempts} "
+          f"accepted={summary.accepted_candidates} output={summary.output_dir}")
+    return 0 if summary.accepted_candidates else 1
 
 
 if __name__ == "__main__":
