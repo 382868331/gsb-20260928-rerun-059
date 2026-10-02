@@ -1,0 +1,23 @@
+{
+  "index": 2,
+  "label": "directed-timing-stall",
+  "start_state": "closed",
+  "steps": [
+    {
+      "name": "open",
+      "hex": "100000"
+    },
+    {
+      "name": "prepare-mode-1",
+      "hex": "200100"
+    },
+    {
+      "name": "config-stall",
+      "hex": "700000"
+    },
+    {
+      "name": "timing",
+      "hex": "800000"
+    }
+  ]
+}

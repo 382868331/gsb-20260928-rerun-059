@@ -1,0 +1,30 @@
+{
+  "name": "session-store-two-version-compare",
+  "description": "Compare the old and revised session store builds with the same fault sequences; no external target is contacted.",
+  "target": "targets.session_store.replay",
+  "local_only": true,
+  "old": {
+    "name": "old",
+    "replay": "targets.session_store.replay",
+    "describe": "targets.session_store.describe_state"
+  },
+  "new": {
+    "name": "new",
+    "replay": "targets.session_store_v2.replay",
+    "describe": "targets.session_store_v2.describe_state"
+  },
+  "compare_policy": {
+    "valid_attempts": 3,
+    "stop_on_first_hit": true
+  },
+  "failure_policy": {
+    "rejected": "explicit rejection on either build is a valid observation, not a defect",
+    "prep_failed": "session build-up broke before the trigger; the pair is incomparable",
+    "incomplete": "attempts that did not finish are never counted as misses"
+  },
+  "default_budget": {
+    "seed": 20260929,
+    "max_cases": 128,
+    "timeout_seconds": 0.5
+  }
+}

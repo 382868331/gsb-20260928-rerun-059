@@ -1,0 +1,66 @@
+{
+  "seed": 20260929,
+  "sides": {
+    "old": {
+      "name": "old",
+      "replay": "targets.session_store.replay",
+      "describe": "targets.session_store.describe_state"
+    },
+    "new": {
+      "name": "new",
+      "replay": "targets.session_store_v2.replay",
+      "describe": "targets.session_store_v2.describe_state"
+    }
+  },
+  "budget": {
+    "max_cases": 200,
+    "timeout": 0.5,
+    "wall_time": null
+  },
+  "policy": {
+    "valid_attempts": 3,
+    "stop_on_first_hit": true,
+    "reduce_repeats": 2
+  },
+  "next_index": 5,
+  "replays": 164,
+  "indexes": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "candidates": [
+    {
+      "stem": "candidate#0",
+      "stage": "done",
+      "classification": "fixed_in_new",
+      "index": 0
+    },
+    {
+      "stem": "candidate#1",
+      "stage": "done",
+      "classification": "different_location",
+      "index": 1
+    },
+    {
+      "stem": "candidate#2",
+      "stage": "done",
+      "classification": "incomparable",
+      "index": 2
+    },
+    {
+      "stem": "candidate#3",
+      "stage": "done",
+      "classification": "same_location",
+      "index": 3
+    },
+    {
+      "stem": "candidate#4",
+      "stage": "done",
+      "classification": "fixed_in_new",
+      "index": 4
+    }
+  ]
+}

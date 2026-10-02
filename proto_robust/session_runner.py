@@ -247,7 +247,7 @@ def replay_sequence_isolated(
 
 def _session_fault_key(exc: BaseException, file_name: str, line_number: int, step: int) -> tuple[str, tuple]:
     """Extract the session state path and structural key bytes of a defect."""
-    if not file_name.endswith("session_store.py"):
+    if not file_name.endswith(("session_store.py", "session_store_v2.py")):
         return "", ()
     tb = exc.__traceback__
     frame = None

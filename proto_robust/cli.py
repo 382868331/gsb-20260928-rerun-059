@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 
 from proto_robust.fuzzer import FuzzingCampaign
-from proto_robust.goals import ResearchGoal
+from proto_robust.compare import CompareCampaign, ComparePolicy, CompareSide, rerun_candidate
+from proto_robust.goals import CompareGoal, ResearchGoal
 from proto_robust.models import Budget
 from proto_robust.session_campaign import SessionCampaign
 from proto_robust.session_runner import replay_sequence_isolated
@@ -12,6 +13,8 @@ from proto_robust.sequences import SessionSequence
 DEFAULT_TARGET = "targets.simple_message.parse_message"
 DEFAULT_SESSION_REPLAY = "targets.session_store.replay"
 DEFAULT_SESSION_DESCRIBE = "targets.session_store.describe_state"
+DEFAULT_COMPARE_OLD = ("targets.session_store.replay", "targets.session_store.describe_state")
+DEFAULT_COMPARE_NEW = ("targets.session_store_v2.replay", "targets.session_store_v2.describe_state")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,6 +37,23 @@ def build_parser() -> argparse.ArgumentParser:
     replay.add_argument("--replay-target", default=DEFAULT_SESSION_REPLAY)
     replay.add_argument("--describe", default=DEFAULT_SESSION_DESCRIBE)
     replay.add_argument("--timeout", type=float, default=1.0)
+
+    compare = subparsers.add_parser(
+        "compare", help="Compare two target versions with the same fault sequences")
+    _add_campaign_args(compare)
+    compare.add_argument("--indexes", default="",
+                         help="Comma-separated generator indexes to limit the campaign")
+    compare.add_argument("--valid-attempts", type=int, default=None,
+                         help="Completed attempts required per side before classifying")
+    compare.add_argument("--no-stop-on-first-hit", action="store_true",
+                         help="Require all valid attempts even after a side observes a hit")
+
+    rerun = subparsers.add_parser(
+        "compare-rerun", help="Append independent rerun attempts to one saved candidate")
+    rerun.add_argument("candidate_file")
+    rerun.add_argument("--side", choices=["old", "new"], default=None)
+    rerun.add_argument("--attempts", type=int, default=1)
+    rerun.add_argument("--timeout", type=float, default=None)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
     _add_campaign_args(parser)
@@ -117,6 +137,57 @@ def _replay(args) -> int:
     return 0 if result.outcome == "ok" else 1
 
 
+def _run_compare(args) -> int:
+    goal, seed, cases, timeout = _campaign_options(args)
+    compare_goal = CompareGoal.load(args.goal) if args.goal else None
+    if compare_goal and not compare_goal.local_only:
+        raise SystemExit("this research build refuses non-local goals")
+    if compare_goal:
+        old_spec, new_spec = compare_goal.old, compare_goal.new
+    else:
+        old_spec = {"name": "old", "replay": DEFAULT_COMPARE_OLD[0], "describe": DEFAULT_COMPARE_OLD[1]}
+        new_spec = {"name": "new", "replay": DEFAULT_COMPARE_NEW[0], "describe": DEFAULT_COMPARE_NEW[1]}
+    valid_attempts = args.valid_attempts or (compare_goal.valid_attempts if compare_goal else 3)
+    stop_on_first_hit = not args.no_stop_on_first_hit
+    if compare_goal is not None and not args.no_stop_on_first_hit:
+        stop_on_first_hit = compare_goal.stop_on_first_hit
+    policy = ComparePolicy(valid_attempts=valid_attempts, stop_on_first_hit=stop_on_first_hit)
+    indexes = [int(part) for part in (args.indexes or "").split(",") if part.strip()] or None
+    campaign = CompareCampaign(
+        CompareSide(old_spec.get("name", "old"), old_spec["replay"], old_spec["describe"]),
+        CompareSide(new_spec.get("name", "new"), new_spec["replay"], new_spec["describe"]),
+        Budget(cases, timeout, args.wall_time),
+        args.output,
+        seed,
+        policy,
+        indexes=indexes,
+    )
+    if args.fresh:
+        campaign.next_index = 0
+        campaign.spent = 0
+        campaign.prior_spent = 0
+        campaign.resumed = False
+        campaign.candidates.clear()
+    summary = campaign.run()
+    print(f"seed={summary.seed} replays={summary.replays} "
+          f"candidates={summary.candidates} classifications={summary.classifications} "
+          f"output={summary.output_dir}")
+    return 0
+
+
+def _run_compare_rerun(args) -> int:
+    candidate = rerun_candidate(
+        args.candidate_file, side_name=args.side, attempts=args.attempts,
+        timeout=args.timeout,
+    )
+    dispositions = {
+        name: dict(side["dispositions"]) for name, side in candidate["sides"].items()
+    }
+    print(f"classification={candidate['classification']} stage={candidate['stage']} "
+          f"dispositions={dispositions}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -124,6 +195,10 @@ def main(argv: list[str] | None = None) -> int:
         return _run_session(args)
     if args.command == "replay":
         return _replay(args)
+    if args.command == "compare":
+        return _run_compare(args)
+    if args.command == "compare-rerun":
+        return _run_compare_rerun(args)
     return _run_stateless(args)
 
 

@@ -1,0 +1,194 @@
+{
+  "stem": "candidate#3",
+  "index": 3,
+  "label": "directed-process-panic-after-select",
+  "stage": "done",
+  "classification": "same_location",
+  "difference_condition": null,
+  "trigger_step": 3,
+  "start_state": "closed",
+  "timeout": 0.5,
+  "stop_condition": {
+    "valid_attempts": 3,
+    "stop_on_first_hit": true
+  },
+  "sides": {
+    "old": {
+      "identity": "old",
+      "replay": "targets.session_store.replay",
+      "describe": "targets.session_store.describe_state",
+      "signature": {
+        "outcome": "runner_error",
+        "exception_type": "AbnormalProcessExit",
+        "message": "worker exited with 9",
+        "fault_file": "",
+        "fault_function": "",
+        "fault_line": 0,
+        "state_path": "",
+        "key": "runner_error"
+      },
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "old",
+          "target": "targets.session_store.replay",
+          "start_state": "closed",
+          "outcome": "runner_error",
+          "exception_type": "AbnormalProcessExit",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "state_path": "",
+          "failing_step": 3,
+          "trigger_step": 3,
+          "disposition": "hit",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.814945325255394e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.907014615833759e-06
+            },
+            {
+              "step": 2,
+              "name": "select-bucket-1",
+              "hex": "300100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "selected",
+              "duration": 2.0979205146431923e-06
+            },
+            {
+              "step": 3,
+              "name": "panic",
+              "hex": "b00000",
+              "outcome": "runner_error",
+              "exception_type": "AbnormalProcessExit",
+              "message": "worker exited with 9",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 0.08950647292658687
+            }
+          ]
+        }
+      ],
+      "hits": 1,
+      "observed": 1,
+      "valid_runs": 1,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "hit": 1
+      }
+    },
+    "new": {
+      "identity": "new",
+      "replay": "targets.session_store_v2.replay",
+      "describe": "targets.session_store_v2.describe_state",
+      "signature": {
+        "outcome": "runner_error",
+        "exception_type": "AbnormalProcessExit",
+        "message": "worker exited with 9",
+        "fault_file": "",
+        "fault_function": "",
+        "fault_line": 0,
+        "state_path": "",
+        "key": "runner_error"
+      },
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "runner_error",
+          "exception_type": "AbnormalProcessExit",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "state_path": "",
+          "failing_step": 3,
+          "trigger_step": 3,
+          "disposition": "hit",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.609006620943546e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 4.091998562216759e-06
+            },
+            {
+              "step": 2,
+              "name": "select-bucket-1",
+              "hex": "300100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "selected",
+              "duration": 2.2869789972901344e-06
+            },
+            {
+              "step": 3,
+              "name": "panic",
+              "hex": "b00000",
+              "outcome": "runner_error",
+              "exception_type": "AbnormalProcessExit",
+              "message": "worker exited with 9",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 0.0796983219916001
+            }
+          ]
+        }
+      ],
+      "hits": 1,
+      "observed": 1,
+      "valid_runs": 1,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "hit": 1
+      }
+    }
+  },
+  "reduction": null
+}

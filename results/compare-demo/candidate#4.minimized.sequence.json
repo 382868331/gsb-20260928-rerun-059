@@ -1,0 +1,23 @@
+{
+  "index": 4,
+  "label": "directed-intermittent-flaky",
+  "start_state": "closed",
+  "steps": [
+    {
+      "name": "open",
+      "hex": "100000"
+    },
+    {
+      "name": "prepare-mode-3",
+      "hex": "200300"
+    },
+    {
+      "name": "flaky-1",
+      "hex": "a00000"
+    },
+    {
+      "name": "flaky-2",
+      "hex": "a00000"
+    }
+  ]
+}

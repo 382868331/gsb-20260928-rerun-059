@@ -1,0 +1,679 @@
+{
+  "stem": "candidate#4",
+  "index": 4,
+  "label": "directed-intermittent-flaky",
+  "stage": "done",
+  "classification": "fixed_in_new",
+  "difference_condition": {
+    "kind": "not_observed",
+    "failing_side": "old",
+    "failing_signature": {
+      "outcome": "crash",
+      "exception_type": "ValueError",
+      "message": "intermittent session defect",
+      "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+      "fault_function": "replay",
+      "fault_line": 180,
+      "state_path": "armed/mode=append",
+      "key": "crash:ValueError@replay:180#armed/mode=append"
+    },
+    "other_signature": null
+  },
+  "trigger_step": 2,
+  "start_state": "closed",
+  "timeout": 0.5,
+  "stop_condition": {
+    "valid_attempts": 3,
+    "stop_on_first_hit": true
+  },
+  "sides": {
+    "old": {
+      "identity": "old",
+      "replay": "targets.session_store.replay",
+      "describe": "targets.session_store.describe_state",
+      "signature": {
+        "outcome": "crash",
+        "exception_type": "ValueError",
+        "message": "intermittent session defect",
+        "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+        "fault_function": "replay",
+        "fault_line": 180,
+        "state_path": "armed/mode=append",
+        "key": "crash:ValueError@replay:180#armed/mode=append"
+      },
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "old",
+          "target": "targets.session_store.replay",
+          "start_state": "closed",
+          "outcome": "ok",
+          "exception_type": "",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "state_path": "",
+          "failing_step": -1,
+          "trigger_step": 2,
+          "disposition": "miss",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 6.1729224398732185e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-3",
+              "hex": "200300",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.957073204219341e-06
+            },
+            {
+              "step": 2,
+              "name": "flaky-1",
+              "hex": "a00000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 2.708984538912773e-06
+            },
+            {
+              "step": 3,
+              "name": "flaky-2",
+              "hex": "a00000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 2.0050210878252983e-06
+            }
+          ]
+        },
+        {
+          "attempt": 1,
+          "source": "campaign",
+          "side": "old",
+          "target": "targets.session_store.replay",
+          "start_state": "closed",
+          "outcome": "crash",
+          "exception_type": "ValueError",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+          "fault_function": "replay",
+          "fault_line": 180,
+          "state_path": "armed/mode=append",
+          "failing_step": 2,
+          "trigger_step": 2,
+          "disposition": "hit",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.8389268815517426e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-3",
+              "hex": "200300",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.888970240950584e-06
+            },
+            {
+              "step": 2,
+              "name": "flaky-1",
+              "hex": "a00000",
+              "outcome": "crash",
+              "exception_type": "ValueError",
+              "message": "intermittent session defect",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 2.1191895939409733e-05
+            }
+          ]
+        }
+      ],
+      "hits": 1,
+      "observed": 1,
+      "valid_runs": 2,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "miss": 1,
+        "hit": 1
+      }
+    },
+    "new": {
+      "identity": "new",
+      "replay": "targets.session_store_v2.replay",
+      "describe": "targets.session_store_v2.describe_state",
+      "signature": null,
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "ok",
+          "exception_type": "",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "state_path": "",
+          "failing_step": -1,
+          "trigger_step": 2,
+          "disposition": "miss",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.637062713503838e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-3",
+              "hex": "200300",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.947061486542225e-06
+            },
+            {
+              "step": 2,
+              "name": "flaky-1",
+              "hex": "a00000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 2.340995706617832e-06
+            },
+            {
+              "step": 3,
+              "name": "flaky-2",
+              "hex": "a00000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 1.8510036170482635e-06
+            }
+          ]
+        },
+        {
+          "attempt": 1,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "ok",
+          "exception_type": "",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "state_path": "",
+          "failing_step": -1,
+          "trigger_step": 2,
+          "disposition": "miss",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.971989594399929e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-3",
+              "hex": "200300",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 4.003988578915596e-06
+            },
+            {
+              "step": 2,
+              "name": "flaky-1",
+              "hex": "a00000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 2.357061021029949e-06
+            },
+            {
+              "step": 3,
+              "name": "flaky-2",
+              "hex": "a00000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 1.8220162019133568e-06
+            }
+          ]
+        },
+        {
+          "attempt": 2,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "ok",
+          "exception_type": "",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "state_path": "",
+          "failing_step": -1,
+          "trigger_step": 2,
+          "disposition": "miss",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 6.127054803073406e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-3",
+              "hex": "200300",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.815046511590481e-06
+            },
+            {
+              "step": 2,
+              "name": "flaky-1",
+              "hex": "a00000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 2.445071004331112e-06
+            },
+            {
+              "step": 3,
+              "name": "flaky-2",
+              "hex": "a00000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 1.7939601093530655e-06
+            }
+          ]
+        }
+      ],
+      "hits": 0,
+      "observed": 0,
+      "valid_runs": 3,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "miss": 3
+      }
+    }
+  },
+  "reduction": {
+    "minimized": {
+      "index": 4,
+      "label": "directed-intermittent-flaky",
+      "start_state": "closed",
+      "steps": [
+        {
+          "name": "open",
+          "hex": "100000"
+        },
+        {
+          "name": "prepare-mode-3",
+          "hex": "200300"
+        },
+        {
+          "name": "flaky-1",
+          "hex": "a00000"
+        },
+        {
+          "name": "flaky-2",
+          "hex": "a00000"
+        }
+      ]
+    },
+    "attempts": 24,
+    "steps": [
+      {
+        "step": 0,
+        "action": "baseline",
+        "interactions": 4,
+        "sequence_hex": [
+          "100000",
+          "200300",
+          "a00000",
+          "a00000"
+        ],
+        "accepted": false,
+        "reason": "original sequence replayed on both builds from clean session starts; failing side reproduces its signature and the other side still satisfies the version-difference condition",
+        "evidence": {
+          "failing": {
+            "hits": 0,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "ok",
+                "start_state": "closed",
+                "end_state": "closed",
+                "duration": 0.08897203602828085,
+                "exception_type": "",
+                "message": "",
+                "fault_file": "",
+                "fault_function": "",
+                "fault_line": 0,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": -1,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.7319412007927895e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-3",
+                    "hex": "200300",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 4.082103259861469e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "flaky-1",
+                    "hex": "a00000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "armed",
+                    "duration": 2.791057340800762e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "flaky-2",
+                    "hex": "a00000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "armed",
+                    "duration": 2.1209707483649254e-06
+                  }
+                ]
+              },
+              {
+                "outcome": "ok",
+                "start_state": "closed",
+                "end_state": "closed",
+                "duration": 0.0899489059811458,
+                "exception_type": "",
+                "message": "",
+                "fault_file": "",
+                "fault_function": "",
+                "fault_line": 0,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": -1,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.803070962429047e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-3",
+                    "hex": "200300",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.7729041650891304e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "flaky-1",
+                    "hex": "a00000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "armed",
+                    "duration": 2.893037162721157e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "flaky-2",
+                    "hex": "a00000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "armed",
+                    "duration": 2.1989690139889717e-06
+                  }
+                ]
+              }
+            ]
+          },
+          "other": {
+            "condition_holds": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "ok",
+                "start_state": "closed",
+                "end_state": "closed",
+                "duration": 0.08922686707228422,
+                "exception_type": "",
+                "message": "",
+                "fault_file": "",
+                "fault_function": "",
+                "fault_line": 0,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": -1,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.559995770454407e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-3",
+                    "hex": "200300",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.7830322980880737e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "flaky-1",
+                    "hex": "a00000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "armed",
+                    "duration": 2.3569446057081223e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "flaky-2",
+                    "hex": "a00000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "armed",
+                    "duration": 1.7470447346568108e-06
+                  }
+                ]
+              },
+              {
+                "outcome": "ok",
+                "start_state": "closed",
+                "end_state": "closed",
+                "duration": 0.08872457803227007,
+                "exception_type": "",
+                "message": "",
+                "fault_file": "",
+                "fault_function": "",
+                "fault_line": 0,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": -1,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.616107955574989e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-3",
+                    "hex": "200300",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 4.143919795751572e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "flaky-1",
+                    "hex": "a00000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "armed",
+                    "duration": 2.315966412425041e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "flaky-2",
+                    "hex": "a00000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "armed",
+                    "duration": 1.8310965970158577e-06
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "baseline_hits": 0,
+    "baseline_runs": 2,
+    "complete": true
+  }
+}

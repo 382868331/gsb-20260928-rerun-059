@@ -1,0 +1,1329 @@
+{
+  "stem": "candidate#0",
+  "index": 0,
+  "label": "directed-commit-table-state-gated",
+  "stage": "done",
+  "classification": "fixed_in_new",
+  "difference_condition": {
+    "kind": "not_observed",
+    "failing_side": "old",
+    "failing_signature": {
+      "outcome": "crash",
+      "exception_type": "IndexError",
+      "message": "tuple index out of range",
+      "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+      "fault_function": "replay",
+      "fault_line": 193,
+      "state_path": "selected/mode=read/bucket=mirror",
+      "key": "crash:IndexError@replay:193#selected/mode=read/bucket=mirror"
+    },
+    "other_signature": null
+  },
+  "trigger_step": 4,
+  "start_state": "closed",
+  "timeout": 0.5,
+  "stop_condition": {
+    "valid_attempts": 3,
+    "stop_on_first_hit": true
+  },
+  "sides": {
+    "old": {
+      "identity": "old",
+      "replay": "targets.session_store.replay",
+      "describe": "targets.session_store.describe_state",
+      "signature": {
+        "outcome": "crash",
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+        "fault_function": "replay",
+        "fault_line": 193,
+        "state_path": "selected/mode=read/bucket=mirror",
+        "key": "crash:IndexError@replay:193#selected/mode=read/bucket=mirror"
+      },
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "old",
+          "target": "targets.session_store.replay",
+          "start_state": "closed",
+          "outcome": "crash",
+          "exception_type": "IndexError",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+          "fault_function": "replay",
+          "fault_line": 193,
+          "state_path": "selected/mode=read/bucket=mirror",
+          "failing_step": 4,
+          "trigger_step": 4,
+          "disposition": "hit",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 6.593996658921242e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 4.956033080816269e-06
+            },
+            {
+              "step": 2,
+              "name": "select-bucket-2",
+              "hex": "300200",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "selected",
+              "duration": 2.7709174901247025e-06
+            },
+            {
+              "step": 3,
+              "name": "set-context",
+              "hex": "40050141",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 3.393040969967842e-06
+            },
+            {
+              "step": 4,
+              "name": "commit-overread",
+              "hex": "5003015a",
+              "outcome": "crash",
+              "exception_type": "IndexError",
+              "message": "tuple index out of range",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 2.6408000849187374e-05
+            }
+          ]
+        }
+      ],
+      "hits": 1,
+      "observed": 1,
+      "valid_runs": 1,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "hit": 1
+      }
+    },
+    "new": {
+      "identity": "new",
+      "replay": "targets.session_store_v2.replay",
+      "describe": "targets.session_store_v2.describe_state",
+      "signature": null,
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "rejected",
+          "exception_type": "SessionReject",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+          "fault_function": "replay",
+          "fault_line": 139,
+          "state_path": "",
+          "failing_step": 4,
+          "trigger_step": 4,
+          "disposition": "rejected",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.587004125118256e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.7819845601916313e-06
+            },
+            {
+              "step": 2,
+              "name": "select-bucket-2",
+              "hex": "300200",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "selected",
+              "duration": 2.2189924493432045e-06
+            },
+            {
+              "step": 3,
+              "name": "set-context",
+              "hex": "40050141",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 2.5979243218898773e-06
+            },
+            {
+              "step": 4,
+              "name": "commit-overread",
+              "hex": "5003015a",
+              "outcome": "rejected",
+              "exception_type": "SessionReject",
+              "message": "unsupported commit operation",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 1.3877986930310726e-05
+            }
+          ]
+        },
+        {
+          "attempt": 1,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "rejected",
+          "exception_type": "SessionReject",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+          "fault_function": "replay",
+          "fault_line": 139,
+          "state_path": "",
+          "failing_step": 4,
+          "trigger_step": 4,
+          "disposition": "rejected",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 1.7459969967603683e-05
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.825989551842213e-06
+            },
+            {
+              "step": 2,
+              "name": "select-bucket-2",
+              "hex": "300200",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "selected",
+              "duration": 2.2210879251360893e-06
+            },
+            {
+              "step": 3,
+              "name": "set-context",
+              "hex": "40050141",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 2.66998540610075e-06
+            },
+            {
+              "step": 4,
+              "name": "commit-overread",
+              "hex": "5003015a",
+              "outcome": "rejected",
+              "exception_type": "SessionReject",
+              "message": "unsupported commit operation",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 1.2729084119200706e-05
+            }
+          ]
+        },
+        {
+          "attempt": 2,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "rejected",
+          "exception_type": "SessionReject",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+          "fault_function": "replay",
+          "fault_line": 139,
+          "state_path": "",
+          "failing_step": 4,
+          "trigger_step": 4,
+          "disposition": "rejected",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.510984919965267e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.969995304942131e-06
+            },
+            {
+              "step": 2,
+              "name": "select-bucket-2",
+              "hex": "300200",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "selected",
+              "duration": 1.9560102373361588e-06
+            },
+            {
+              "step": 3,
+              "name": "set-context",
+              "hex": "40050141",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 2.4730106815695763e-06
+            },
+            {
+              "step": 4,
+              "name": "commit-overread",
+              "hex": "5003015a",
+              "outcome": "rejected",
+              "exception_type": "SessionReject",
+              "message": "unsupported commit operation",
+              "state_before": "selected",
+              "state_after": "selected",
+              "duration": 1.3069948181509972e-05
+            }
+          ]
+        }
+      ],
+      "hits": 0,
+      "observed": 0,
+      "valid_runs": 3,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "rejected": 3
+      }
+    }
+  },
+  "reduction": {
+    "minimized": {
+      "index": 0,
+      "label": "directed-commit-table-state-gated",
+      "start_state": "closed",
+      "steps": [
+        {
+          "name": "open",
+          "hex": "100000"
+        },
+        {
+          "name": "prepare-mode-1",
+          "hex": "200100"
+        },
+        {
+          "name": "select-bucket-2",
+          "hex": "300200"
+        },
+        {
+          "name": "commit-overread",
+          "hex": "50030100"
+        }
+      ]
+    },
+    "attempts": 92,
+    "steps": [
+      {
+        "step": 0,
+        "action": "baseline",
+        "interactions": 5,
+        "sequence_hex": [
+          "100000",
+          "200100",
+          "300200",
+          "40050141",
+          "5003015a"
+        ],
+        "accepted": true,
+        "reason": "original sequence replayed on both builds from clean session starts; failing side reproduces its signature and the other side still satisfies the version-difference condition",
+        "evidence": {
+          "failing": {
+            "hits": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08911058597732335,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+                "fault_function": "replay",
+                "fault_line": 193,
+                "state_path": "selected/mode=read/bucket=mirror",
+                "key_conditions": [
+                  {
+                    "step": 4,
+                    "offset": 0,
+                    "value": 80
+                  },
+                  {
+                    "step": 4,
+                    "offset": 1,
+                    "value": 3
+                  }
+                ],
+                "failing_step": 4,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 6.08095433562994e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 4.057073965668678e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.2349413484334946e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "set-context",
+                    "hex": "40050141",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.4989712983369827e-06
+                  },
+                  {
+                    "step": 4,
+                    "name": "commit-overread",
+                    "hex": "5003015a",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.132798545062542e-05
+                  }
+                ]
+              },
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.0900651280535385,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+                "fault_function": "replay",
+                "fault_line": 193,
+                "state_path": "selected/mode=read/bucket=mirror",
+                "key_conditions": [
+                  {
+                    "step": 4,
+                    "offset": 0,
+                    "value": 80
+                  },
+                  {
+                    "step": 4,
+                    "offset": 1,
+                    "value": 3
+                  }
+                ],
+                "failing_step": 4,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.900976248085499e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.862893208861351e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.078944817185402e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "set-context",
+                    "hex": "40050141",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.5581102818250656e-06
+                  },
+                  {
+                    "step": 4,
+                    "name": "commit-overread",
+                    "hex": "5003015a",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.0594103261828423e-05
+                  }
+                ]
+              }
+            ]
+          },
+          "other": {
+            "condition_holds": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "rejected",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08987190190237015,
+                "exception_type": "SessionReject",
+                "message": "unsupported commit operation",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+                "fault_function": "replay",
+                "fault_line": 139,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": 4,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.834037438035011e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.8120197132229805e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.1460000425577164e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "set-context",
+                    "hex": "40050141",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.6009511202573776e-06
+                  },
+                  {
+                    "step": 4,
+                    "name": "commit-overread",
+                    "hex": "5003015a",
+                    "outcome": "rejected",
+                    "exception_type": "SessionReject",
+                    "message": "unsupported commit operation",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.6857946068048477e-05
+                  }
+                ]
+              },
+              {
+                "outcome": "rejected",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08942943403963,
+                "exception_type": "SessionReject",
+                "message": "unsupported commit operation",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+                "fault_function": "replay",
+                "fault_line": 139,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": 4,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.904003046452999e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.938097506761551e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.071959897875786e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "set-context",
+                    "hex": "40050141",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.54996120929718e-06
+                  },
+                  {
+                    "step": 4,
+                    "name": "commit-overread",
+                    "hex": "5003015a",
+                    "outcome": "rejected",
+                    "exception_type": "SessionReject",
+                    "message": "unsupported commit operation",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 1.307495404034853e-05
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "step": 2,
+        "action": "drop-interaction",
+        "position": 3,
+        "dropped": "set-context",
+        "interactions": 4,
+        "sequence_hex": [
+          "100000",
+          "200100",
+          "300200",
+          "5003015a"
+        ],
+        "accepted": true,
+        "reason": "interaction 3 (set-context) removed; failing side still reproduces the same defect and the other side still satisfies the version-difference condition",
+        "evidence": {
+          "failing": {
+            "hits": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.0892276739468798,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+                "fault_function": "replay",
+                "fault_line": 193,
+                "state_path": "selected/mode=read/bucket=mirror",
+                "key_conditions": [
+                  {
+                    "step": 3,
+                    "offset": 0,
+                    "value": 80
+                  },
+                  {
+                    "step": 3,
+                    "offset": 1,
+                    "value": 3
+                  }
+                ],
+                "failing_step": 3,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.883979611098766e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 4.139961674809456e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.2050226107239723e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "commit-overread",
+                    "hex": "5003015a",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.1351035684347153e-05
+                  }
+                ]
+              },
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08985916408710182,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+                "fault_function": "replay",
+                "fault_line": 193,
+                "state_path": "selected/mode=read/bucket=mirror",
+                "key_conditions": [
+                  {
+                    "step": 3,
+                    "offset": 0,
+                    "value": 80
+                  },
+                  {
+                    "step": 3,
+                    "offset": 1,
+                    "value": 3
+                  }
+                ],
+                "failing_step": 3,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.965004675090313e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.904104232788086e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 1.9510043784976006e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "commit-overread",
+                    "hex": "5003015a",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.0683975890278816e-05
+                  }
+                ]
+              }
+            ]
+          },
+          "other": {
+            "condition_holds": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "rejected",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08955130004324019,
+                "exception_type": "SessionReject",
+                "message": "unsupported commit operation",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+                "fault_function": "replay",
+                "fault_line": 139,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": 3,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.7319412007927895e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 4.115048795938492e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.0650913938879967e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "commit-overread",
+                    "hex": "5003015a",
+                    "outcome": "rejected",
+                    "exception_type": "SessionReject",
+                    "message": "unsupported commit operation",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 1.3612094335258007e-05
+                  }
+                ]
+              },
+              {
+                "outcome": "rejected",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.09200176398735493,
+                "exception_type": "SessionReject",
+                "message": "unsupported commit operation",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+                "fault_function": "replay",
+                "fault_line": 139,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": 3,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.3140101954340935e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 4.334026016294956e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.229004167020321e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "commit-overread",
+                    "hex": "5003015a",
+                    "outcome": "rejected",
+                    "exception_type": "SessionReject",
+                    "message": "unsupported commit operation",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 1.3428041711449623e-05
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "step": 3,
+        "action": "lower-byte",
+        "position": 3,
+        "offset": 3,
+        "old_value": 90,
+        "new_value": 0,
+        "interactions": 4,
+        "sequence_hex": [
+          "100000",
+          "200100",
+          "300200",
+          "50030100"
+        ],
+        "accepted": true,
+        "reason": "byte at interaction 3 offset 3 lowered to 0; the version difference is preserved on both builds",
+        "evidence": {
+          "failing": {
+            "hits": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08911887800786644,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+                "fault_function": "replay",
+                "fault_line": 193,
+                "state_path": "selected/mode=read/bucket=mirror",
+                "key_conditions": [
+                  {
+                    "step": 3,
+                    "offset": 0,
+                    "value": 80
+                  },
+                  {
+                    "step": 3,
+                    "offset": 1,
+                    "value": 3
+                  }
+                ],
+                "failing_step": 3,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.615060217678547e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.898050636053085e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.2799940779805183e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "commit-overread",
+                    "hex": "50030100",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.1001906134188175e-05
+                  }
+                ]
+              },
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08907835010904819,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+                "fault_function": "replay",
+                "fault_line": 193,
+                "state_path": "selected/mode=read/bucket=mirror",
+                "key_conditions": [
+                  {
+                    "step": 3,
+                    "offset": 0,
+                    "value": 80
+                  },
+                  {
+                    "step": 3,
+                    "offset": 1,
+                    "value": 3
+                  }
+                ],
+                "failing_step": 3,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.749985575675964e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.856956027448177e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.260901965200901e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "commit-overread",
+                    "hex": "50030100",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 2.0400970242917538e-05
+                  }
+                ]
+              }
+            ]
+          },
+          "other": {
+            "condition_holds": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "rejected",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08901550201699138,
+                "exception_type": "SessionReject",
+                "message": "unsupported commit operation",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+                "fault_function": "replay",
+                "fault_line": 139,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": 3,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.809939466416836e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.959983587265015e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 1.994892954826355e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "commit-overread",
+                    "hex": "50030100",
+                    "outcome": "rejected",
+                    "exception_type": "SessionReject",
+                    "message": "unsupported commit operation",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 1.2950971722602844e-05
+                  }
+                ]
+              },
+              {
+                "outcome": "rejected",
+                "start_state": "closed",
+                "end_state": "selected",
+                "duration": 0.08843857701867819,
+                "exception_type": "SessionReject",
+                "message": "unsupported commit operation",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+                "fault_function": "replay",
+                "fault_line": 139,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": 3,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.707959644496441e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-mode-1",
+                    "hex": "200100",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "open",
+                    "state_after": "armed",
+                    "duration": 3.91004141420126e-06
+                  },
+                  {
+                    "step": 2,
+                    "name": "select-bucket-2",
+                    "hex": "300200",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "armed",
+                    "state_after": "selected",
+                    "duration": 2.137967385351658e-06
+                  },
+                  {
+                    "step": 3,
+                    "name": "commit-overread",
+                    "hex": "50030100",
+                    "outcome": "rejected",
+                    "exception_type": "SessionReject",
+                    "message": "unsupported commit operation",
+                    "state_before": "selected",
+                    "state_after": "selected",
+                    "duration": 1.287402119487524e-05
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "baseline_hits": 2,
+    "baseline_runs": 2,
+    "complete": true
+  }
+}

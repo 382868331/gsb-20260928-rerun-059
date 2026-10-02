@@ -122,3 +122,52 @@ python -m proto_robust.cli run --goal goals/simple_message.json \
 - `<签名>#<索引>.minimized.sequence.json`：保持同一缺陷、同一状态路径的当前最小候选（缩减暂停时也已保存）。
 - `<签名>#<索引>.json`：签名（含缺陷位置与状态路径）、每次尝试的完整交互证据、缩减步骤与理由、阶段标记。
 - `session.campaign.checkpoint.json` / `session.campaign.json`：可恢复活动状态与摘要。
+
+## 双版本故障序列对比（第三轮增强）
+
+第三轮把同一故障序列同时用于两个目标版本，区分"旧版可复现而新版未观察到"、"两版触发不同位置"以及"环境或会话准备未完成而无法比较"。
+
+- 新版目标 `targets/session_store_v2.py`：commit 表越界已修复（明确拒绝）、mode 表缺陷移到新位置、CONFIG 命令退役（时序序列的建态无法完成）、间歇缺陷已修复、PANIC 行为不变。
+- `proto_robust/compare.py`：对比活动。每轮在两个版本上各自从干净会话起点重放同一序列，记录各自起点、输入顺序、目标身份（`target` 字段）和实际结果。未跑完的尝试记为 `incomplete`，**不计成未命中**。
+- `proto_robust/compare_reducer.py`：差异保持缩减。候选被接受的条件是：失败侧仍复现原签名，**且**另一侧仍满足研究者选定的版本差异条件（`not_observed` 或 `different_location`）——不是只让其中一版继续报任意异常。
+
+### 分类
+
+- `fixed_in_new`：旧版稳定复现，新版所有完成尝试都未观察到失败（明确拒绝算未观察到）。
+- `different_location`：两版都失败，但缺陷位置（文件/函数/行或状态路径）不同。
+- `same_location` / `new_only` / `unstable`：两版同位置、仅新版失败、失败侧复现率不达标。
+- `incomparable`：任一侧会话准备未完成（建态交互在触发前被拒绝/中断，或环境连续无法完成重放），触发交互从未到达。
+
+### 有效尝试与停止条件
+
+每个候选按 `stop_condition` 独立约定：`valid_attempts`（每侧所需完成尝试数，默认 3）与 `stop_on_first_hit`（观察到命中即可提前停止该侧）。每次尝试的去向在 `dispositions` 中分类展示：`hit`、`miss`、`rejected`、`timeout`/`observed_failure`、`prep_failed`、`incomplete`。成组复跑（活动本身，`source=campaign`）与单独复跑（`compare-rerun`，`source=rerun-single`）的尝试都追加进同一份证据。
+
+### 预算中止与恢复
+
+每次重放都计入预算并原子写入 `compare.campaign.checkpoint.json`（下一序列索引、累计重放数、每个候选的阶段与分类）。用相同 `--output` 再次运行会接续对比：已完成的确认尝试不重复计数，未完成的确认/缩减继续推进。最终候选的 `*.minimized.sequence.json` 可按双方原会话条件独立复演（`replay --replay-target` 分别指向两版）。
+
+### 运行
+
+```bash
+# 双版本对比活动
+python -m proto_robust.cli compare --goal goals/session_compare.json \
+  --output results/compare-demo --timeout 0.5 --indexes 0,1,2,3,4
+
+# 对单个候选追加独立复跑（两侧各 2 次）
+python -m proto_robust.cli compare-rerun \
+  results/compare-demo/candidate#0.json --attempts 2 --timeout 0.5
+
+# 最终候选按双方原会话条件独立复演
+python -m proto_robust.cli replay \
+  results/compare-demo/candidate#0.minimized.sequence.json \
+  --replay-target targets.session_store.replay --timeout 0.5
+python -m proto_robust.cli replay \
+  results/compare-demo/candidate#0.minimized.sequence.json \
+  --replay-target targets.session_store_v2.replay --timeout 0.5
+```
+
+发现产物（每个候选）：
+
+- `candidate#<索引>.original.sequence.json` / `.minimized.sequence.json`：原始序列与保持版本差异的最小候选，均可独立重放。
+- `candidate#<索引>.json`：分类、版本差异条件、每侧目标身份与签名、逐次尝试（含来源、去向、完整交互序列）、缩减步骤与双侧证据。
+- `compare.campaign.checkpoint.json` / `compare.campaign.json`：可恢复活动状态与摘要（含各候选去向统计）。

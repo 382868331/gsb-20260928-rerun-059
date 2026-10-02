@@ -1,0 +1,226 @@
+{
+  "stem": "candidate#2",
+  "index": 2,
+  "label": "directed-timing-stall",
+  "stage": "done",
+  "classification": "incomparable",
+  "difference_condition": null,
+  "trigger_step": 3,
+  "start_state": "closed",
+  "timeout": 0.5,
+  "stop_condition": {
+    "valid_attempts": 3,
+    "stop_on_first_hit": true
+  },
+  "sides": {
+    "old": {
+      "identity": "old",
+      "replay": "targets.session_store.replay",
+      "describe": "targets.session_store.describe_state",
+      "signature": {
+        "outcome": "timeout",
+        "exception_type": "",
+        "message": "sequence exceeded per-replay time budget",
+        "fault_file": "",
+        "fault_function": "",
+        "fault_line": 0,
+        "state_path": "",
+        "key": "timeout"
+      },
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "old",
+          "target": "targets.session_store.replay",
+          "start_state": "closed",
+          "outcome": "timeout",
+          "exception_type": "",
+          "fault_file": "",
+          "fault_function": "",
+          "fault_line": 0,
+          "state_path": "",
+          "failing_step": 3,
+          "trigger_step": 3,
+          "disposition": "hit",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.768029950559139e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 3.924011252820492e-06
+            },
+            {
+              "step": 2,
+              "name": "config-stall",
+              "hex": "700000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 1.8649734556674957e-06
+            },
+            {
+              "step": 3,
+              "name": "timing",
+              "hex": "800000",
+              "outcome": "timeout",
+              "exception_type": "Timeout",
+              "message": "interaction exceeded the per-replay time budget",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 0.5009464559843764
+            }
+          ]
+        }
+      ],
+      "hits": 1,
+      "observed": 1,
+      "valid_runs": 1,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "hit": 1
+      }
+    },
+    "new": {
+      "identity": "new",
+      "replay": "targets.session_store_v2.replay",
+      "describe": "targets.session_store_v2.describe_state",
+      "signature": null,
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "rejected",
+          "exception_type": "SessionReject",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+          "fault_function": "replay",
+          "fault_line": 119,
+          "state_path": "",
+          "failing_step": 2,
+          "trigger_step": 3,
+          "disposition": "prep_failed",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.677924491465092e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 4.0299491956830025e-06
+            },
+            {
+              "step": 2,
+              "name": "config-stall",
+              "hex": "700000",
+              "outcome": "rejected",
+              "exception_type": "SessionReject",
+              "message": "CONFIG retired in v2; timing stall cannot be armed",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 1.2795091606676579e-05
+            }
+          ]
+        },
+        {
+          "attempt": 1,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "rejected",
+          "exception_type": "SessionReject",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+          "fault_function": "replay",
+          "fault_line": 119,
+          "state_path": "",
+          "failing_step": 2,
+          "trigger_step": 3,
+          "disposition": "prep_failed",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.588051863014698e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-mode-1",
+              "hex": "200100",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "open",
+              "state_after": "armed",
+              "duration": 4.062894731760025e-06
+            },
+            {
+              "step": 2,
+              "name": "config-stall",
+              "hex": "700000",
+              "outcome": "rejected",
+              "exception_type": "SessionReject",
+              "message": "CONFIG retired in v2; timing stall cannot be armed",
+              "state_before": "armed",
+              "state_after": "armed",
+              "duration": 1.25060323625803e-05
+            }
+          ]
+        }
+      ],
+      "hits": 0,
+      "observed": 0,
+      "valid_runs": 2,
+      "incomplete_streak": 0,
+      "prep_blocked": true,
+      "dispositions": {
+        "prep_failed": 2
+      }
+    }
+  },
+  "reduction": null
+}

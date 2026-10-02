@@ -1,0 +1,398 @@
+{
+  "stem": "candidate#1",
+  "index": 1,
+  "label": "directed-mode-table-overread",
+  "stage": "done",
+  "classification": "different_location",
+  "difference_condition": {
+    "kind": "different_location",
+    "failing_side": "old",
+    "failing_signature": {
+      "outcome": "crash",
+      "exception_type": "IndexError",
+      "message": "tuple index out of range",
+      "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+      "fault_function": "replay",
+      "fault_line": 143,
+      "state_path": "open",
+      "key": "crash:IndexError@replay:143#open"
+    },
+    "other_signature": {
+      "outcome": "crash",
+      "exception_type": "IndexError",
+      "message": "tuple index out of range",
+      "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+      "fault_function": "_lookup_mode",
+      "fault_line": 57,
+      "state_path": "",
+      "key": "crash:IndexError@_lookup_mode:57"
+    }
+  },
+  "trigger_step": 1,
+  "start_state": "closed",
+  "timeout": 0.5,
+  "stop_condition": {
+    "valid_attempts": 3,
+    "stop_on_first_hit": true
+  },
+  "sides": {
+    "old": {
+      "identity": "old",
+      "replay": "targets.session_store.replay",
+      "describe": "targets.session_store.describe_state",
+      "signature": {
+        "outcome": "crash",
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+        "fault_function": "replay",
+        "fault_line": 143,
+        "state_path": "open",
+        "key": "crash:IndexError@replay:143#open"
+      },
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "old",
+          "target": "targets.session_store.replay",
+          "start_state": "closed",
+          "outcome": "crash",
+          "exception_type": "IndexError",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+          "fault_function": "replay",
+          "fault_line": 143,
+          "state_path": "open",
+          "failing_step": 1,
+          "trigger_step": 1,
+          "disposition": "hit",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.6979479268193245e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-bad-mode",
+              "hex": "20fe00",
+              "outcome": "crash",
+              "exception_type": "IndexError",
+              "message": "tuple index out of range",
+              "state_before": "open",
+              "state_after": "open",
+              "duration": 1.9458006136119366e-05
+            }
+          ]
+        }
+      ],
+      "hits": 1,
+      "observed": 1,
+      "valid_runs": 1,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "hit": 1
+      }
+    },
+    "new": {
+      "identity": "new",
+      "replay": "targets.session_store_v2.replay",
+      "describe": "targets.session_store_v2.describe_state",
+      "signature": {
+        "outcome": "crash",
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+        "fault_function": "_lookup_mode",
+        "fault_line": 57,
+        "state_path": "",
+        "key": "crash:IndexError@_lookup_mode:57"
+      },
+      "trials": [
+        {
+          "attempt": 0,
+          "source": "campaign",
+          "side": "new",
+          "target": "targets.session_store_v2.replay",
+          "start_state": "closed",
+          "outcome": "crash",
+          "exception_type": "IndexError",
+          "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+          "fault_function": "_lookup_mode",
+          "fault_line": 57,
+          "state_path": "",
+          "failing_step": 1,
+          "trigger_step": 1,
+          "disposition": "hit",
+          "completed": true,
+          "steps": [
+            {
+              "step": 0,
+              "name": "open",
+              "hex": "100000",
+              "outcome": "ok",
+              "exception_type": "",
+              "message": "",
+              "state_before": "closed",
+              "state_after": "open",
+              "duration": 5.866982974112034e-06
+            },
+            {
+              "step": 1,
+              "name": "prepare-bad-mode",
+              "hex": "20fe00",
+              "outcome": "crash",
+              "exception_type": "IndexError",
+              "message": "tuple index out of range",
+              "state_before": "open",
+              "state_after": "open",
+              "duration": 2.003100235015154e-05
+            }
+          ]
+        }
+      ],
+      "hits": 1,
+      "observed": 1,
+      "valid_runs": 1,
+      "incomplete_streak": 0,
+      "prep_blocked": false,
+      "dispositions": {
+        "hit": 1
+      }
+    }
+  },
+  "reduction": {
+    "minimized": {
+      "index": 1,
+      "label": "directed-mode-table-overread",
+      "start_state": "closed",
+      "steps": [
+        {
+          "name": "open",
+          "hex": "100000"
+        },
+        {
+          "name": "prepare-bad-mode",
+          "hex": "20fe00"
+        }
+      ]
+    },
+    "attempts": 20,
+    "steps": [
+      {
+        "step": 0,
+        "action": "baseline",
+        "interactions": 2,
+        "sequence_hex": [
+          "100000",
+          "20fe00"
+        ],
+        "accepted": true,
+        "reason": "original sequence replayed on both builds from clean session starts; failing side reproduces its signature and the other side still satisfies the version-difference condition",
+        "evidence": {
+          "failing": {
+            "hits": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "open",
+                "duration": 0.08935193601064384,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+                "fault_function": "replay",
+                "fault_line": 143,
+                "state_path": "open",
+                "key_conditions": [
+                  {
+                    "step": 1,
+                    "offset": 0,
+                    "value": 32
+                  },
+                  {
+                    "step": 1,
+                    "offset": 1,
+                    "value": 254
+                  }
+                ],
+                "failing_step": 1,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.737063474953175e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-bad-mode",
+                    "hex": "20fe00",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "open",
+                    "state_after": "open",
+                    "duration": 1.9464991055428982e-05
+                  }
+                ]
+              },
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "open",
+                "duration": 0.08880178595427424,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store.py",
+                "fault_function": "replay",
+                "fault_line": 143,
+                "state_path": "open",
+                "key_conditions": [
+                  {
+                    "step": 1,
+                    "offset": 0,
+                    "value": 32
+                  },
+                  {
+                    "step": 1,
+                    "offset": 1,
+                    "value": 254
+                  }
+                ],
+                "failing_step": 1,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.895039066672325e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-bad-mode",
+                    "hex": "20fe00",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "open",
+                    "state_after": "open",
+                    "duration": 1.9772909581661224e-05
+                  }
+                ]
+              }
+            ]
+          },
+          "other": {
+            "condition_holds": 2,
+            "runs": 2,
+            "trials": [
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "open",
+                "duration": 0.08905419695656747,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+                "fault_function": "_lookup_mode",
+                "fault_line": 57,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": 1,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.894922651350498e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-bad-mode",
+                    "hex": "20fe00",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "open",
+                    "state_after": "open",
+                    "duration": 1.9678962416946888e-05
+                  }
+                ]
+              },
+              {
+                "outcome": "crash",
+                "start_state": "closed",
+                "end_state": "open",
+                "duration": 0.08928621700033545,
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "fault_file": "/做题/题目/20261002-followup150/059-协议健壮性研究系统/A/attempts/008/workspace/targets/session_store_v2.py",
+                "fault_function": "_lookup_mode",
+                "fault_line": 57,
+                "state_path": "",
+                "key_conditions": [],
+                "failing_step": 1,
+                "exit_code": 0,
+                "steps": [
+                  {
+                    "step": 0,
+                    "name": "open",
+                    "hex": "100000",
+                    "outcome": "ok",
+                    "exception_type": "",
+                    "message": "",
+                    "state_before": "closed",
+                    "state_after": "open",
+                    "duration": 5.715060979127884e-06
+                  },
+                  {
+                    "step": 1,
+                    "name": "prepare-bad-mode",
+                    "hex": "20fe00",
+                    "outcome": "crash",
+                    "exception_type": "IndexError",
+                    "message": "tuple index out of range",
+                    "state_before": "open",
+                    "state_after": "open",
+                    "duration": 1.9916915334761143e-05
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "baseline_hits": 2,
+    "baseline_runs": 2,
+    "complete": true
+  }
+}
