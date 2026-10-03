@@ -15,6 +15,7 @@ from proto_robust.differential import (
     DifferenceKind,
     VersionSpec,
     evaluate_candidate,
+    order_conclusion,
     reduce_differential_sequence,
 )
 from proto_robust.models import Budget, FailureSignature
@@ -41,6 +42,7 @@ class DifferentialCampaign:
                  budget: Budget, output_dir: str | Path, seed: int,
                  candidate_policy: AttemptPolicy | None = None,
                  final_policy: AttemptPolicy | None = None,
+                 order_mode: str = "fixed",
                  fresh: bool = False) -> None:
         self.sequence = sequence
         self.condition = condition
@@ -51,8 +53,9 @@ class DifferentialCampaign:
             valid_attempts=2,
             stop_after_rejections=1,
             required_hit_ratio=1.0,
+            order_mode=order_mode,
         )
-        self.final_policy = final_policy or AttemptPolicy(valid_attempts=3)
+        self.final_policy = final_policy or AttemptPolicy(valid_attempts=3, order_mode=order_mode)
         self.spent = 0
         self.prior_spent = 0
         self.resumed = False
@@ -92,7 +95,7 @@ class DifferentialCampaign:
                     self._run_pair,
                     self.final_policy,
                     "final",
-                    "group",
+                    "final",
                     attempt_budget=remaining,
                     attempts_before=0,
                 )
@@ -115,18 +118,17 @@ class DifferentialCampaign:
         self._write_summary(summary)
         return summary
 
-    def _run_pair(self, sequence: SessionSequence, namespace: str, mode: str):
-        order = (self.condition.old, self.condition.new)
-        results = []
-        for ordinal, version in enumerate(order):
-            results.append(replay_sequence_isolated(
+    def _run_pair(self, sequence: SessionSequence, namespace: str, mode: str, versions):
+        results = {}
+        for ordinal, version in enumerate(versions):
+            results[version.identity] = replay_sequence_isolated(
                 sequence,
                 version.replay_name,
                 version.describe_name,
                 self.budget.timeout,
                 attempt_namespace=f"{namespace}-{version.identity}-{ordinal}",
-            ))
-        return results[0], results[1]
+            )
+        return results.get(self.condition.old.identity), results.get(self.condition.new.identity)
 
     def _write_checkpoint(self) -> None:
         payload = {
@@ -156,13 +158,34 @@ class DifferentialCampaign:
 
     def _write_summary(self, summary: DifferentialSummary) -> None:
         reduction_steps = self.report.steps if self.report else []
-        totals = {"hit": 0, "rejected": 0, "timeout": 0, "preparation_failed": 0}
+        totals = {"hit": 0, "rejected": 0, "timeout": 0,
+                  "preparation_failed": 0, "incomplete": 0}
         for step in reduction_steps:
             for name, value in step.get("counts", {}).items():
                 totals[name] = totals.get(name, 0) + value
         if self.final:
             for name, value in self.final.counts().items():
                 totals[name] = totals.get(name, 0) + value
+        totals["valid"] = totals.get("hit", 0) + totals.get("rejected", 0)
+        conclusion_source = None
+        if self.final is not None:
+            conclusion_source = [attempt.to_dict() for attempt in self.final.attempts]
+        else:
+            accepted_steps = [step for step in reduction_steps if step.get("accepted")]
+            if accepted_steps:
+                conclusion_source = list(accepted_steps[-1].get("attempts", []))
+        conclusion = order_conclusion(conclusion_source or [])
+        notes = []
+        if conclusion["order_conditioned"] and conclusion["verdict"] not in ("no_valid_rounds", "no_valid_hit"):
+            notes.append(
+                "final candidate conclusion remains order-conditioned: "
+                + conclusion["explanation"]
+            )
+        if totals.get("incomplete"):
+            notes.append(
+                f"{totals['incomplete']} paired round(s) ended incomplete (one side never ran); "
+                "they are listed separately and count neither as hits nor as misses"
+            )
         payload = {
             "seed": summary.seed,
             "pair_attempts": summary.pair_attempts,
@@ -178,6 +201,9 @@ class DifferentialCampaign:
             "condition": self.condition.to_dict(),
             "outcomes": totals,
             "input_order": [self.condition.old.identity, self.condition.new.identity],
+            "order_mode": self.candidate_policy.order_mode,
+            "order_conclusion": conclusion,
+            "order_conditioned_notes": notes,
             "files": [
                 "original.sequence.json",
                 "minimized.sequence.json",

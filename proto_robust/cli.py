@@ -47,6 +47,8 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--new-identity", default="new")
     compare.add_argument("--difference", choices=("old_reproducible_new_absent", "different_location"),
                         default="old_reproducible_new_absent")
+    compare.add_argument("--order", choices=("fixed", "alternating"), default="fixed",
+                        help="Execution order of the two versions inside each paired round")
     _add_campaign_args(compare)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
@@ -160,7 +162,7 @@ def _compare(args) -> int:
     )
     campaign = DifferentialCampaign(
         sequence, condition, Budget(pair_budget, timeout, args.wall_time),
-        args.output, seed, fresh=args.fresh,
+        args.output, seed, order_mode=args.order, fresh=args.fresh,
     )
     summary = campaign.run()
     print(f"seed={summary.seed} pair_attempts={summary.pair_attempts} "

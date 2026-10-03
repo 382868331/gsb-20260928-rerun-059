@@ -149,4 +149,24 @@ python -m proto_robust.cli compare \
 - `minimized.sequence.json`：保持双版本差异条件的当前最小候选，预算暂停时也可复演。
 - `final.sequence.json`：完成缩减后按最终策略独立成组复演的候选。
 - `differential.checkpoint.json`：差异条件、候选策略、每组成组/单独证据和已消耗尝试数。
+
+## 成对故障试验与顺序效应（第四轮增强）
+
+两个版本的先后运行可能互相改变起始条件，因此 `compare` 的每一轮都是一次受控的成对试验，并显式管理执行顺序：
+
+- `--order fixed`（默认）每轮都按 旧→新 执行；`--order alternating` 让相邻轮次在 旧→新 与 新→旧 之间交替，研究者可直接比较两种顺序下的结论。
+- 每一对都原子记录：计划的输入顺序、实际执行顺序（`execution_order`）、双方真实会话起点（`old_start_state`/`new_start_state`）、双方准备结果（`old_prepared`/`new_prepared`）、完整输入与各自结果。一对证据不可拆分，不能把一对的一边与另一对的另一边拼成支持证据。
+- 准备未完成的一边不算未命中：该轮归为 `preparation_failed`；一侧根本没执行的轮次归为 `incomplete`，单独列出，既不计入有效试验也不算命中或拒绝。
+- 单独复跑（`solo`）、成组缩减复跑（`group`）与最终复演（`final`）各自保留身份，恢复运行时只追加新证据，不覆盖已有成对结果；已记账轮次在预算恢复后不再重复计数。
+
+### 顺序条件结论
+
+每次候选评估和最终摘要都带 `order_conclusion`：
+
+- `both_orders`：差异在两种执行顺序下都复现，结论不受顺序限制。
+- `order_dependent:<顺序>`：差异只在某一顺序下出现，结论仍受该前置状态限制。
+- `single_order_only`：所有有效轮次只用了同一种顺序（例如固定顺序），另一种顺序下尚未验证。
+- `no_valid_hit` / `no_valid_rounds`：没有可支持差异结论的有效轮次。
+
+摘要中 `outcomes` 分别列出有效试验（`valid`，命中+拒绝）、`hit`、`rejected`、`timeout`、`preparation_failed` 与 `incomplete`；`order_conditioned_notes` 用文字说明哪些结论仍受顺序条件限制。最终保留的候选（`final.sequence.json`）可按记录的双方起点、按原顺序重新演示。
 - `differential.json`：预算、恢复标记、版本身份、输入顺序和四类结果汇总。

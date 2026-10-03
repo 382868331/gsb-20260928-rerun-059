@@ -4,6 +4,15 @@ A valid comparison always contains two fresh-process replays with the same
 ordered session input: one against the old target and one against the new
 target.  A preparation failure is not a negative result, because the target
 was never put in the session condition required for the comparison.
+
+Paired control trials also control the execution order of the two versions.
+Because the first run can change the starting conditions observed by the
+second, each pair records the planned input order, the actual execution
+order, both sides' real session start points and both preparation results.
+A pair is atomic evidence: one side of a pair may never be spliced with the
+other side of a different pair, and a round whose second side never ran is
+recorded as an incomplete round instead of being silently dropped or
+counted as a miss.
 """
 
 from __future__ import annotations
@@ -22,6 +31,11 @@ class DifferenceKind(str, Enum):
 
 
 PREPARATION_OUTCOME = Outcome.PREPARATION_ERROR.value
+
+
+class OrderMode(str, Enum):
+    FIXED = "fixed"
+    ALTERNATING = "alternating"
 
 
 @dataclass(frozen=True)
@@ -65,7 +79,9 @@ class AttemptPolicy:
     stop_after_rejections: int | None = None
     stop_after_timeouts: int | None = 1
     stop_after_preparation_failures: int | None = 1
+    stop_after_incomplete: int | None = 2
     required_hit_ratio: float = 1.0
+    order_mode: str = OrderMode.FIXED.value
 
     def to_dict(self) -> dict:
         return {
@@ -74,7 +90,9 @@ class AttemptPolicy:
             "stop_after_rejections": self.stop_after_rejections,
             "stop_after_timeouts": self.stop_after_timeouts,
             "stop_after_preparation_failures": self.stop_after_preparation_failures,
+            "stop_after_incomplete": self.stop_after_incomplete,
             "required_hit_ratio": self.required_hit_ratio,
+            "order_mode": self.order_mode,
         }
 
 
@@ -88,14 +106,24 @@ class PairAttempt:
     old_result: dict
     new_result: dict
     disposition: str
+    execution_order: tuple[str, ...] = ()
+    old_prepared: bool = True
+    new_prepared: bool = True
+    old_start_state: str = ""
+    new_start_state: str = ""
 
     def to_dict(self) -> dict:
         return {
             "name": self.name,
             "mode": self.mode,
             "input_order": list(self.input_order),
+            "execution_order": list(self.execution_order or self.input_order),
             "old_identity": self.old_identity,
             "new_identity": self.new_identity,
+            "old_prepared": self.old_prepared,
+            "new_prepared": self.new_prepared,
+            "old_start_state": self.old_start_state,
+            "new_start_state": self.new_start_state,
             "old": self.old_result,
             "new": self.new_result,
             "disposition": self.disposition,
@@ -112,10 +140,14 @@ class CandidateEvaluation:
 
     @property
     def valid_attempts(self) -> list[PairAttempt]:
-        return [item for item in self.attempts if item.disposition != "preparation_failed"]
+        return [
+            item for item in self.attempts
+            if item.disposition not in ("preparation_failed", "incomplete")
+        ]
 
     def counts(self) -> dict[str, int]:
-        counts = {"hit": 0, "rejected": 0, "timeout": 0, "preparation_failed": 0}
+        counts = {"hit": 0, "rejected": 0, "timeout": 0,
+                  "preparation_failed": 0, "incomplete": 0}
         for attempt in self.attempts:
             counts[attempt.disposition] = counts.get(attempt.disposition, 0) + 1
         return counts
@@ -128,6 +160,7 @@ class CandidateEvaluation:
             "accepted": self.accepted,
             "complete": self.complete,
             "counts": counts,
+            "order_conclusion": order_conclusion(self.attempts),
             "attempts": [attempt.to_dict() for attempt in self.attempts],
         }
 
@@ -142,7 +175,9 @@ class CandidateEvaluation:
                 stop_after_rejections=policy_payload.get("stop_after_rejections"),
                 stop_after_timeouts=policy_payload.get("stop_after_timeouts", 1),
                 stop_after_preparation_failures=policy_payload.get("stop_after_preparation_failures", 1),
+                stop_after_incomplete=policy_payload.get("stop_after_incomplete", 2),
                 required_hit_ratio=float(policy_payload.get("required_hit_ratio", 1.0)),
+                order_mode=str(policy_payload.get("order_mode", OrderMode.FIXED.value)),
             ),
             attempts=[PairAttempt(
                 name=str(item["name"]),
@@ -153,6 +188,11 @@ class CandidateEvaluation:
                 old_result=dict(item.get("old", {})),
                 new_result=dict(item.get("new", {})),
                 disposition=str(item["disposition"]),
+                execution_order=tuple(item.get("execution_order", [])),
+                old_prepared=bool(item.get("old_prepared", True)),
+                new_prepared=bool(item.get("new_prepared", True)),
+                old_start_state=str(item.get("old_start_state", "")),
+                new_start_state=str(item.get("new_start_state", "")),
             ) for item in payload.get("attempts", [])],
             accepted=bool(payload.get("accepted", False)),
             complete=bool(payload.get("complete", False)),
@@ -182,8 +222,10 @@ def result_matches(result: ReplayResult | dict, signature: FailureSignature) -> 
     return expected.issubset(observed)
 
 
-def classify_pair(old_result: ReplayResult | dict, new_result: ReplayResult | dict,
+def classify_pair(old_result: ReplayResult | dict | None, new_result: ReplayResult | dict | None,
                   condition: DifferentialCondition) -> str:
+    if old_result is None or new_result is None:
+        return "incomplete"
     old = old_result.to_dict() if isinstance(old_result, ReplayResult) else old_result
     new = new_result.to_dict() if isinstance(new_result, ReplayResult) else new_result
     if old.get("outcome") == PREPARATION_OUTCOME or new.get("outcome") == PREPARATION_OUTCOME:
@@ -210,7 +252,72 @@ def classify_pair(old_result: ReplayResult | dict, new_result: ReplayResult | di
         return "rejected" if same_location else "hit"
     return "rejected"
 
-RunPair = Callable[[SessionSequence, str, str], tuple[ReplayResult, ReplayResult]]
+
+def order_conclusion(attempts) -> dict:
+    """Summarize whether the difference holds under every execution order.
+
+    Accepts PairAttempt objects or their dict form.  Only valid rounds
+    (neither preparation_failed nor incomplete) feed the verdict.
+    """
+    stats: dict[str, dict[str, int]] = {}
+    for attempt in attempts:
+        if isinstance(attempt, dict):
+            disposition = str(attempt.get("disposition", ""))
+            order = attempt.get("execution_order") or attempt.get("input_order") or []
+        else:
+            disposition = attempt.disposition
+            order = attempt.execution_order or attempt.input_order
+        if disposition in ("preparation_failed", "incomplete"):
+            continue
+        key = "->".join(order)
+        bucket = stats.setdefault(key, {"valid": 0, "hit": 0, "rejected": 0, "timeout": 0})
+        bucket["valid"] += 1
+        if disposition in bucket:
+            bucket[disposition] += 1
+    hit_orders = [key for key, bucket in stats.items() if bucket["hit"] > 0]
+    if not stats:
+        verdict = "no_valid_rounds"
+    elif len(stats) < 2:
+        verdict = "single_order_only"
+    elif len(hit_orders) >= 2:
+        verdict = "both_orders"
+    elif len(hit_orders) == 1:
+        verdict = f"order_dependent:{hit_orders[0]}"
+    else:
+        verdict = "no_valid_hit"
+    conditioned = verdict != "both_orders"
+    explanations = {
+        "no_valid_rounds": "no valid paired round finished; nothing can be attributed to the version difference",
+        "single_order_only": "all valid rounds used one execution order; the difference is not confirmed when the other version runs first",
+        "both_orders": "the difference reproduced under both execution orders",
+        "no_valid_hit": "valid rounds finished under every order but the selected difference never appeared",
+    }
+    if verdict.startswith("order_dependent:"):
+        explanation = (
+            "the difference only appeared when the execution order was "
+            f"{verdict.split(':', 1)[1]}; it remains conditioned on that order"
+        )
+    else:
+        explanation = explanations[verdict]
+    return {
+        "orders": stats,
+        "verdict": verdict,
+        "order_conditioned": conditioned,
+        "explanation": explanation,
+    }
+
+
+RunPair = Callable[
+    [SessionSequence, str, str, tuple],
+    "tuple[ReplayResult | None, ReplayResult | None]",
+]
+
+
+def _round_order(condition: DifferentialCondition, policy: AttemptPolicy,
+                 round_index: int) -> tuple:
+    if policy.order_mode == OrderMode.ALTERNATING.value and round_index % 2 == 1:
+        return (condition.new, condition.old)
+    return (condition.old, condition.new)
 
 
 def evaluate_candidate(
@@ -245,19 +352,29 @@ def evaluate_candidate(
             break
         if policy.stop_after_preparation_failures is not None and counts["preparation_failed"] >= policy.stop_after_preparation_failures:
             break
+        if policy.stop_after_incomplete is not None and counts["incomplete"] >= policy.stop_after_incomplete:
+            break
         attempt_name = f"{name_prefix}-pair-{len(evaluation.attempts)}"
-        order = (condition.old.identity, condition.new.identity)
-        old_result, new_result = run_pair(candidate, attempt_name, mode)
+        versions = _round_order(condition, policy, len(evaluation.attempts))
+        order = tuple(version.identity for version in versions)
+        old_result, new_result = run_pair(candidate, attempt_name, mode, versions)
         disposition = classify_pair(old_result, new_result, condition)
+        old_payload = old_result.to_dict() if isinstance(old_result, ReplayResult) else dict(old_result or {})
+        new_payload = new_result.to_dict() if isinstance(new_result, ReplayResult) else dict(new_result or {})
         evaluation.attempts.append(PairAttempt(
             name=attempt_name,
             mode=mode,
-            input_order=order,
+            input_order=(condition.old.identity, condition.new.identity),
             old_identity=condition.old.identity,
             new_identity=condition.new.identity,
-            old_result=old_result.to_dict(),
-            new_result=new_result.to_dict(),
+            old_result=old_payload,
+            new_result=new_payload,
             disposition=disposition,
+            execution_order=order,
+            old_prepared=old_payload.get("outcome") != PREPARATION_OUTCOME,
+            new_prepared=new_payload.get("outcome") != PREPARATION_OUTCOME,
+            old_start_state=str(old_payload.get("start_state", "")),
+            new_start_state=str(new_payload.get("start_state", "")),
         ))
     counts = evaluation.counts()
     valid = len(evaluation.valid_attempts)
@@ -268,6 +385,8 @@ def evaluate_candidate(
         or (policy.stop_after_timeouts is not None and counts["timeout"] >= policy.stop_after_timeouts)
         or (policy.stop_after_preparation_failures is not None
             and counts["preparation_failed"] >= policy.stop_after_preparation_failures)
+        or (policy.stop_after_incomplete is not None
+            and counts["incomplete"] >= policy.stop_after_incomplete)
     )
     if valid:
         evaluation.accepted = counts["hit"] / valid >= policy.required_hit_ratio
