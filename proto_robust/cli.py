@@ -47,6 +47,13 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--new-identity", default="new")
     compare.add_argument("--difference", choices=("old_reproducible_new_absent", "different_location"),
                         default="old_reproducible_new_absent")
+    compare.add_argument("--order-plan", default="fixed",
+                        help="Comma-separated round kinds cycled across pairs: "
+                             "'fixed' always runs old before new, 'alternating' flips "
+                             "the execution direction every alternating round")
+    compare.add_argument("--require-both-orders", action="store_true",
+                        help="Accept a candidate only when the difference reproduces "
+                             "under every recorded execution order")
     _add_campaign_args(compare)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
@@ -158,9 +165,23 @@ def _compare(args) -> int:
     condition = condition_from_old_result(
         old_result, args.difference, old_version, new_version, new_signature
     )
+    order_plan = tuple(
+        part.strip() for part in str(args.order_plan).split(",") if part.strip()
+    ) or ("fixed",)
+    for kind in order_plan:
+        if kind not in ("fixed", "alternating"):
+            raise SystemExit(f"unknown order-plan round kind: {kind}")
+    candidate_policy = None
+    final_policy = None
+    if args.require_both_orders:
+        from proto_robust.differential import AttemptPolicy
+        candidate_policy = AttemptPolicy(valid_attempts=2, stop_after_rejections=1,
+                                         required_hit_ratio=1.0, require_both_orders=True)
+        final_policy = AttemptPolicy(valid_attempts=3, require_both_orders=True)
     campaign = DifferentialCampaign(
         sequence, condition, Budget(pair_budget, timeout, args.wall_time),
-        args.output, seed, fresh=args.fresh,
+        args.output, seed, candidate_policy=candidate_policy, final_policy=final_policy,
+        order_plan=order_plan, fresh=args.fresh,
     )
     summary = campaign.run()
     print(f"seed={summary.seed} pair_attempts={summary.pair_attempts} "

@@ -1,9 +1,20 @@
-"""Differential reduction for two target versions replaying one sequence.
+"""Paired differential trials for two target versions replaying one sequence.
 
 A valid comparison always contains two fresh-process replays with the same
 ordered session input: one against the old target and one against the new
-target.  A preparation failure is not a negative result, because the target
-was never put in the session condition required for the comparison.
+target.  Because the version that runs first can change the starting
+conditions of the version that runs second, every pair records the actual
+execution order, both sides' real session start points, their preparation
+results and the exact inputs that were replayed.  Rounds can follow a fixed
+order or alternate directions so researchers can tell whether a difference
+holds under both orders or only under a specific precondition.
+
+A preparation failure is not a negative result, because that side was never
+put in the session condition required for the comparison.  A round where one
+side never ran at all is "incomplete" and is listed separately from valid
+trials, timeouts and preparation failures.  The two sides of one pair are
+recorded atomically: evidence is never spliced across pairs, and solo reruns
+keep their own identity instead of overwriting paired results.
 """
 
 from __future__ import annotations
@@ -65,7 +76,9 @@ class AttemptPolicy:
     stop_after_rejections: int | None = None
     stop_after_timeouts: int | None = 1
     stop_after_preparation_failures: int | None = 1
+    stop_after_incomplete: int | None = 1
     required_hit_ratio: float = 1.0
+    require_both_orders: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -74,28 +87,53 @@ class AttemptPolicy:
             "stop_after_rejections": self.stop_after_rejections,
             "stop_after_timeouts": self.stop_after_timeouts,
             "stop_after_preparation_failures": self.stop_after_preparation_failures,
+            "stop_after_incomplete": self.stop_after_incomplete,
             "required_hit_ratio": self.required_hit_ratio,
+            "require_both_orders": self.require_both_orders,
         }
+
+
+DISPOSITIONS = ("hit", "rejected", "timeout", "preparation_failed", "incomplete")
 
 
 @dataclass
 class PairAttempt:
     name: str
     mode: str
+    round_kind: str
     input_order: tuple[str, str]
+    inputs: tuple[str, ...]
     old_identity: str
     new_identity: str
     old_result: dict
     new_result: dict
     disposition: str
 
+    @property
+    def old_ran(self) -> bool:
+        return bool(self.old_result)
+
+    @property
+    def new_ran(self) -> bool:
+        return bool(self.new_result)
+
+    @staticmethod
+    def _prepared(result: dict) -> bool:
+        return bool(result) and result.get("outcome") != PREPARATION_OUTCOME
+
     def to_dict(self) -> dict:
         return {
             "name": self.name,
             "mode": self.mode,
+            "round_kind": self.round_kind,
             "input_order": list(self.input_order),
+            "inputs": list(self.inputs),
             "old_identity": self.old_identity,
             "new_identity": self.new_identity,
+            "old_start_state": self.old_result.get("start_state", ""),
+            "new_start_state": self.new_result.get("start_state", ""),
+            "old_prepared": self._prepared(self.old_result),
+            "new_prepared": self._prepared(self.new_result),
             "old": self.old_result,
             "new": self.new_result,
             "disposition": self.disposition,
@@ -112,13 +150,68 @@ class CandidateEvaluation:
 
     @property
     def valid_attempts(self) -> list[PairAttempt]:
-        return [item for item in self.attempts if item.disposition != "preparation_failed"]
+        return [
+            item for item in self.attempts
+            if item.disposition not in ("preparation_failed", "incomplete")
+        ]
 
     def counts(self) -> dict[str, int]:
-        counts = {"hit": 0, "rejected": 0, "timeout": 0, "preparation_failed": 0}
+        counts = {name: 0 for name in DISPOSITIONS}
         for attempt in self.attempts:
             counts[attempt.disposition] = counts.get(attempt.disposition, 0) + 1
         return counts
+
+    def order_conclusion(self) -> dict:
+        """Explain whether the difference holds under every execution order.
+
+        Only the two sides of the same pair are ever compared; pairs are
+        grouped by their recorded execution direction so a hit observed in
+        one order is never combined with the opposite side of another pair.
+        """
+        per_order: dict[str, dict[str, int]] = {}
+        for attempt in self.attempts:
+            direction = "->".join(attempt.input_order)
+            stats = per_order.setdefault(direction, {name: 0 for name in DISPOSITIONS} | {"valid": 0})
+            stats[attempt.disposition] = stats.get(attempt.disposition, 0) + 1
+            if attempt.disposition not in ("preparation_failed", "incomplete"):
+                stats["valid"] += 1
+        valid_directions = [d for d, stats in per_order.items() if stats["valid"] > 0]
+        hit_directions = [d for d in valid_directions if per_order[d]["hit"] > 0]
+        missed_directions = [d for d in valid_directions if per_order[d]["hit"] == 0]
+        if not valid_directions:
+            conclusion = "no_valid_rounds"
+        elif len(valid_directions) > 1 and not missed_directions:
+            conclusion = "both_orders"
+        elif missed_directions and hit_directions:
+            conclusion = "order_conditional"
+        elif hit_directions:
+            conclusion = "single_order_only"
+        else:
+            conclusion = "no_valid_difference"
+        order_limited = conclusion != "both_orders"
+        if conclusion == "both_orders":
+            explanation = "difference reproduces under every recorded execution order"
+        elif conclusion == "order_conditional":
+            first = hit_directions[0].split("->")[0]
+            explanation = (
+                f"difference confirmed only when '{first}' runs first; "
+                f"rounds ordered {missed_directions[0]} did not reproduce it"
+            )
+        elif conclusion == "single_order_only":
+            explanation = (
+                "difference confirmed only under the single recorded order "
+                f"{hit_directions[0]}; no valid round in any other order"
+            )
+        elif conclusion == "no_valid_difference":
+            explanation = "valid rounds exist but none reproduced the selected difference"
+        else:
+            explanation = "no valid rounds; every round was a preparation failure or incomplete"
+        return {
+            "conclusion": conclusion,
+            "order_limited": order_limited,
+            "per_order": per_order,
+            "explanation": explanation,
+        }
 
     def to_dict(self) -> dict:
         counts = self.counts()
@@ -128,6 +221,7 @@ class CandidateEvaluation:
             "accepted": self.accepted,
             "complete": self.complete,
             "counts": counts,
+            "order_conclusion": self.order_conclusion(),
             "attempts": [attempt.to_dict() for attempt in self.attempts],
         }
 
@@ -142,12 +236,16 @@ class CandidateEvaluation:
                 stop_after_rejections=policy_payload.get("stop_after_rejections"),
                 stop_after_timeouts=policy_payload.get("stop_after_timeouts", 1),
                 stop_after_preparation_failures=policy_payload.get("stop_after_preparation_failures", 1),
+                stop_after_incomplete=policy_payload.get("stop_after_incomplete", 1),
                 required_hit_ratio=float(policy_payload.get("required_hit_ratio", 1.0)),
+                require_both_orders=bool(policy_payload.get("require_both_orders", False)),
             ),
             attempts=[PairAttempt(
                 name=str(item["name"]),
                 mode=str(item.get("mode", "group")),
+                round_kind=str(item.get("round_kind", "fixed")),
                 input_order=tuple(item.get("input_order", [])),
+                inputs=tuple(item.get("inputs", [])),
                 old_identity=str(item.get("old_identity", "")),
                 new_identity=str(item.get("new_identity", "")),
                 old_result=dict(item.get("old", {})),
@@ -182,10 +280,15 @@ def result_matches(result: ReplayResult | dict, signature: FailureSignature) -> 
     return expected.issubset(observed)
 
 
-def classify_pair(old_result: ReplayResult | dict, new_result: ReplayResult | dict,
+def classify_pair(old_result: ReplayResult | dict | None, new_result: ReplayResult | dict | None,
                   condition: DifferentialCondition) -> str:
-    old = old_result.to_dict() if isinstance(old_result, ReplayResult) else old_result
-    new = new_result.to_dict() if isinstance(new_result, ReplayResult) else new_result
+    old = _result_dict(old_result)
+    new = _result_dict(new_result)
+    if old is None or new is None:
+        # One side never ran (e.g. the budget or wall clock cut the pair in
+        # half).  The round is incomplete: it is not a hit, not a miss and
+        # not a preparation failure of either version.
+        return "incomplete"
     if old.get("outcome") == PREPARATION_OUTCOME or new.get("outcome") == PREPARATION_OUTCOME:
         return "preparation_failed"
     if old.get("outcome") == Outcome.TIMEOUT.value or new.get("outcome") == Outcome.TIMEOUT.value:
@@ -210,7 +313,28 @@ def classify_pair(old_result: ReplayResult | dict, new_result: ReplayResult | di
         return "rejected" if same_location else "hit"
     return "rejected"
 
-RunPair = Callable[[SessionSequence, str, str], tuple[ReplayResult, ReplayResult]]
+
+def _result_dict(result: ReplayResult | dict | None) -> dict | None:
+    if result is None:
+        return None
+    payload = result.to_dict() if isinstance(result, ReplayResult) else dict(result)
+    return payload or None
+
+
+# Runs one pair in the given execution order and returns each side's result
+# keyed by version identity; a side maps to None when it never ran.
+RunPair = Callable[
+    [SessionSequence, str, str, tuple[str, str]],
+    dict[str, ReplayResult | dict | None],
+]
+
+
+def _round_order(condition: DifferentialCondition, round_kind: str,
+                 alternating_index: int) -> tuple[str, str]:
+    forward = (condition.old.identity, condition.new.identity)
+    if round_kind == "alternating" and alternating_index % 2 == 1:
+        return (condition.new.identity, condition.old.identity)
+    return forward
 
 
 def evaluate_candidate(
@@ -220,6 +344,7 @@ def evaluate_candidate(
     policy: AttemptPolicy | None = None,
     name_prefix: str = "candidate",
     mode: str = "solo",
+    order_plan: tuple[str, ...] = ("fixed",),
     evaluation: CandidateEvaluation | None = None,
     can_attempt: Callable[[], bool] | None = None,
     attempt_budget: int | None = None,
@@ -245,18 +370,26 @@ def evaluate_candidate(
             break
         if policy.stop_after_preparation_failures is not None and counts["preparation_failed"] >= policy.stop_after_preparation_failures:
             break
+        if policy.stop_after_incomplete is not None and counts["incomplete"] >= policy.stop_after_incomplete:
+            break
         attempt_name = f"{name_prefix}-pair-{len(evaluation.attempts)}"
-        order = (condition.old.identity, condition.new.identity)
-        old_result, new_result = run_pair(candidate, attempt_name, mode)
+        round_kind = order_plan[len(evaluation.attempts) % len(order_plan)]
+        alternating_index = sum(1 for item in evaluation.attempts if item.round_kind == "alternating")
+        order = _round_order(condition, round_kind, alternating_index)
+        results = run_pair(candidate, attempt_name, mode, order)
+        old_result = _result_dict(results.get(condition.old.identity))
+        new_result = _result_dict(results.get(condition.new.identity))
         disposition = classify_pair(old_result, new_result, condition)
         evaluation.attempts.append(PairAttempt(
             name=attempt_name,
             mode=mode,
+            round_kind=round_kind,
             input_order=order,
+            inputs=tuple(step.data.hex() for step in candidate.steps),
             old_identity=condition.old.identity,
             new_identity=condition.new.identity,
-            old_result=old_result.to_dict(),
-            new_result=new_result.to_dict(),
+            old_result=old_result or {},
+            new_result=new_result or {},
             disposition=disposition,
         ))
     counts = evaluation.counts()
@@ -268,9 +401,16 @@ def evaluate_candidate(
         or (policy.stop_after_timeouts is not None and counts["timeout"] >= policy.stop_after_timeouts)
         or (policy.stop_after_preparation_failures is not None
             and counts["preparation_failed"] >= policy.stop_after_preparation_failures)
+        or (policy.stop_after_incomplete is not None
+            and counts["incomplete"] >= policy.stop_after_incomplete)
     )
     if valid:
-        evaluation.accepted = counts["hit"] / valid >= policy.required_hit_ratio
+        ratio_ok = counts["hit"] / valid >= policy.required_hit_ratio
+        orders_ok = (
+            not policy.require_both_orders
+            or evaluation.order_conclusion()["conclusion"] == "both_orders"
+        )
+        evaluation.accepted = ratio_ok and orders_ok
     return evaluation
 
 
@@ -322,6 +462,7 @@ def reduce_differential_sequence(
     condition: DifferentialCondition,
     run_pair: RunPair,
     policy: AttemptPolicy | None = None,
+    order_plan: tuple[str, ...] = ("fixed",),
     report: DifferentialReductionReport | None = None,
     max_pair_attempts: int | None = None,
     pair_attempts_used: int = 0,
@@ -334,6 +475,7 @@ def reduce_differential_sequence(
     if report is None:
         baseline = evaluate_candidate(
             sequence, condition, run_pair, policy, "baseline", "solo",
+            order_plan=order_plan,
             can_attempt=lambda: max_pair_attempts is None or pair_attempts_used < max_pair_attempts,
             attempt_budget=max_pair_attempts,
             attempts_before=pair_attempts_used,
@@ -368,6 +510,7 @@ def reduce_differential_sequence(
                 continue
             evaluation = evaluate_candidate(
                 candidate, condition, run_pair, policy, f"drop-{position}", "group",
+                order_plan=order_plan,
                 can_attempt=lambda used=pair_attempts_used: max_pair_attempts is None or used < max_pair_attempts,
                 attempt_budget=max_pair_attempts,
                 attempts_before=pair_attempts_used,
@@ -410,6 +553,7 @@ def reduce_differential_sequence(
                     evaluation = evaluate_candidate(
                         candidate, condition, run_pair, policy,
                         f"byte-{step_index}-{offset}", "group",
+                        order_plan=order_plan,
                         can_attempt=lambda used=pair_attempts_used: max_pair_attempts is None or used < max_pair_attempts,
                         attempt_budget=max_pair_attempts,
                         attempts_before=pair_attempts_used,

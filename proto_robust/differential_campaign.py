@@ -41,12 +41,14 @@ class DifferentialCampaign:
                  budget: Budget, output_dir: str | Path, seed: int,
                  candidate_policy: AttemptPolicy | None = None,
                  final_policy: AttemptPolicy | None = None,
+                 order_plan: tuple[str, ...] = ("fixed",),
                  fresh: bool = False) -> None:
         self.sequence = sequence
         self.condition = condition
         self.budget = budget
         self.output_dir = Path(output_dir)
         self.seed = seed
+        self.order_plan = tuple(order_plan) or ("fixed",)
         self.candidate_policy = candidate_policy or AttemptPolicy(
             valid_attempts=2,
             stop_after_rejections=1,
@@ -59,9 +61,12 @@ class DifferentialCampaign:
         self.report: DifferentialReductionReport | None = None
         self.final = None
         self.fresh = fresh
+        self._deadline: float | None = None
 
     def run(self) -> DifferentialSummary:
         start = time.monotonic()
+        if self.budget.wall_time:
+            self._deadline = start + self.budget.wall_time
         if not self.fresh:
             self._load_checkpoint()
         accepted = 0
@@ -72,6 +77,7 @@ class DifferentialCampaign:
                 self.condition,
                 self._run_pair,
                 policy=self.candidate_policy,
+                order_plan=self.order_plan,
                 report=self.report,
                 max_pair_attempts=remaining,
                 pair_attempts_used=0,
@@ -93,6 +99,7 @@ class DifferentialCampaign:
                     self.final_policy,
                     "final",
                     "group",
+                    order_plan=self.order_plan,
                     attempt_budget=remaining,
                     attempts_before=0,
                 )
@@ -115,23 +122,38 @@ class DifferentialCampaign:
         self._write_summary(summary)
         return summary
 
-    def _run_pair(self, sequence: SessionSequence, namespace: str, mode: str):
-        order = (self.condition.old, self.condition.new)
-        results = []
-        for ordinal, version in enumerate(order):
-            results.append(replay_sequence_isolated(
-                sequence,
-                version.replay_name,
-                version.describe_name,
-                self.budget.timeout,
-                attempt_namespace=f"{namespace}-{version.identity}-{ordinal}",
-            ))
-        return results[0], results[1]
+    def _run_pair(self, sequence: SessionSequence, namespace: str, mode: str,
+                  order: tuple[str, str]) -> dict:
+        versions = {
+            self.condition.old.identity: self.condition.old,
+            self.condition.new.identity: self.condition.new,
+        }
+        results: dict[str, ReplayResult | None] = {}
+        for ordinal, identity in enumerate(order):
+            version = versions[identity]
+            if self._deadline is not None and time.monotonic() >= self._deadline:
+                # The wall clock cut the pair in half: the remaining side
+                # never ran, so the round stays incomplete instead of
+                # becoming a fabricated miss for that version.
+                results[identity] = None
+                continue
+            try:
+                results[identity] = replay_sequence_isolated(
+                    sequence,
+                    version.replay_name,
+                    version.describe_name,
+                    self.budget.timeout,
+                    attempt_namespace=f"{namespace}-{version.identity}-{ordinal}",
+                )
+            except Exception:
+                results[identity] = None
+        return results
 
     def _write_checkpoint(self) -> None:
         payload = {
             "seed": self.seed,
             "pair_attempts": self.prior_spent + self.spent,
+            "order_plan": list(self.order_plan),
             "condition": self.condition.to_dict(),
             "candidate_policy": self.candidate_policy.to_dict(),
             "final_policy": self.final_policy.to_dict(),
@@ -148,6 +170,8 @@ class DifferentialCampaign:
         self.prior_spent = int(payload.get("pair_attempts", 0))
         self.spent = 0
         self.resumed = True
+        if payload.get("order_plan"):
+            self.order_plan = tuple(payload["order_plan"])
         if payload.get("reduction"):
             self.report = DifferentialReductionReport.from_checkpoint(payload["reduction"])
         if payload.get("final"):
@@ -156,13 +180,29 @@ class DifferentialCampaign:
 
     def _write_summary(self, summary: DifferentialSummary) -> None:
         reduction_steps = self.report.steps if self.report else []
-        totals = {"hit": 0, "rejected": 0, "timeout": 0, "preparation_failed": 0}
+        totals = {"hit": 0, "rejected": 0, "timeout": 0, "preparation_failed": 0, "incomplete": 0}
         for step in reduction_steps:
             for name, value in step.get("counts", {}).items():
                 totals[name] = totals.get(name, 0) + value
         if self.final:
             for name, value in self.final.counts().items():
                 totals[name] = totals.get(name, 0) + value
+        order_conclusion = None
+        if self.final is not None:
+            order_conclusion = self.final.order_conclusion()
+        elif self.report is not None:
+            accepted_steps = [
+                step for step in reduction_steps
+                if step.get("accepted") and step.get("order_conclusion")
+            ]
+            if accepted_steps:
+                order_conclusion = accepted_steps[-1]["order_conclusion"]
+        order_limited: list[str] = []
+        if order_conclusion and order_conclusion.get("order_limited"):
+            order_limited.append(order_conclusion["explanation"])
+            prep_note = self._preparation_note(order_conclusion)
+            if prep_note:
+                order_limited.append(prep_note)
         payload = {
             "seed": summary.seed,
             "pair_attempts": summary.pair_attempts,
@@ -177,7 +217,10 @@ class DifferentialCampaign:
             "resumed": summary.resumed,
             "condition": self.condition.to_dict(),
             "outcomes": totals,
+            "order_plan": list(self.order_plan),
             "input_order": [self.condition.old.identity, self.condition.new.identity],
+            "order_conclusion": order_conclusion,
+            "order_limited_conclusions": order_limited,
             "files": [
                 "original.sequence.json",
                 "minimized.sequence.json",
@@ -187,6 +230,23 @@ class DifferentialCampaign:
             ],
         }
         _atomic_json(self.output_dir / "differential.json", payload)
+
+    @staticmethod
+    def _preparation_note(order_conclusion: dict) -> str:
+        notes = []
+        for direction, stats in order_conclusion.get("per_order", {}).items():
+            if stats.get("preparation_failed"):
+                notes.append(
+                    f"rounds ordered {direction} include "
+                    f"{stats['preparation_failed']} preparation failure(s) that were "
+                    "not counted as misses for either version"
+                )
+            if stats.get("incomplete"):
+                notes.append(
+                    f"rounds ordered {direction} include "
+                    f"{stats['incomplete']} incomplete round(s) where one side never ran"
+                )
+        return "; ".join(notes)
 
 
 def condition_from_old_result(result: ReplayResult, kind: str,

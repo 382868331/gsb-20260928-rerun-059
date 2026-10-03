@@ -150,3 +150,25 @@ python -m proto_robust.cli compare \
 - `final.sequence.json`：完成缩减后按最终策略独立成组复演的候选。
 - `differential.checkpoint.json`：差异条件、候选策略、每组成组/单独证据和已消耗尝试数。
 - `differential.json`：预算、恢复标记、版本身份、输入顺序和四类结果汇总。
+
+## 成对故障试验与顺序效应（第四轮增强）
+
+两个版本的差异可能受运行顺序影响：先跑的一边可能改变后跑一边的起始条件。`compare` 现在把每一对试验当作不可拆分的整体记录，并支持用 `--order-plan fixed,alternating` 混合固定顺序轮与交替顺序轮：
+
+```bash
+python -m proto_robust.cli compare \
+  results/session-core-demo/<stem>.original.sequence.json \
+  --old-replay targets.session_store_shared.replay \
+  --new-replay targets.session_store_shared_new.replay \
+  --output results/paired-order-demo --timeout 0.5 \
+  --order-plan fixed,alternating --require-both-orders
+```
+
+- 固定顺序轮永远按 `old -> new` 执行；交替顺序轮在 `old -> new` 与 `new -> old` 之间轮换。每一对都记录轮次类型（`round_kind`）、实际执行顺序（`input_order`）、双方真实会话起点（`old_start_state`/`new_start_state`）、双方准备是否完成（`old_prepared`/`new_prepared`）和实际重放的输入帧（`inputs`）。
+- 准备未完成的一边不算未命中：该对记为 `preparation_failed`，不进入有效试验数。预算或墙钟把一对拦腰截断时，没跑的一边记 `None`，整对记为 `incomplete`，与有效试验、超时、准备失败分别列出（`stop_after_incomplete` 默认 1 次即停）。
+- 一对的两边原子记录，绝不把一对中的一边与另一对的结果拼接成证据；`solo` 单独复跑（如基线）与 `group` 成组缩减复跑各自保留身份，最终复演写入独立的 `final` 评估，不覆盖缩减过程中的成对证据。
+- 缩减候选除保持所选双侧故障条件外，还会给出顺序结论（`order_conclusion`）：`both_orders` 表示差异在两种顺序下都成立；`order_conditional`/`single_order_only` 表示只在某种前置状态（执行顺序）下出现；`no_valid_rounds`/`no_valid_difference` 表示没有有效证据。`--require-both-orders` 可要求候选必须在所有已记录顺序下都复现差异才被接受。
+- 预算按成对轮次计数；预算耗尽后用相同 `--output` 继续原对照活动，检查点中已记账的轮次不再重复计数，`order_plan` 随检查点恢复。
+- `differential.json` 汇总五类结果（`hit`/`rejected`/`timeout`/`preparation_failed`/`incomplete`）、每个执行方向的分项计数、最终顺序结论，以及 `order_limited_conclusions`：哪些结论仍受顺序条件限制（含准备失败/未完成轮次的说明）。保留的候选（`final.sequence.json`）可随时按记录的双方起点用 `replay` 子命令以原顺序重新演示。
+
+演示目标 `targets/session_store_shared.py`（旧版）与 `targets/session_store_shared_new.py`（新版）共享一个外部提交后端（`SESSION_STORE_SHARED_DIR` 下按对命名空间加锁）：旧版先跑时崩溃会把后端锁留给同一对的新版，新版准备失败；新版先跑时差异正常复现。因此该差异只在 `new -> old` 顺序下成立，系统会如实报告 `order_limited` 而不是把准备失败算成新版未命中。
