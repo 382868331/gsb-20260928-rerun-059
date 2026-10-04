@@ -198,5 +198,91 @@ class PairedReplayCampaignTests(unittest.TestCase):
         self.assertEqual(by_id["timing-stall"]["valid"], 0)
 
 
+class OrderBalancePlanTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.out = Path(self.tmp.name) / "paired"
+
+    @staticmethod
+    def two_groups_three_pairs() -> list[PairedGroupSpec]:
+        import dataclasses
+        return [dataclasses.replace(group, pairs=3) for group in goal_groups()[:2]]
+
+    def run_campaign(self, groups, cases, balance="per-group", fresh=False):
+        campaign = PairedReplayCampaign(
+            groups, OLD, NEW, Budget(cases, TIMEOUT), self.out, 20261005,
+            order_balance=balance, fresh=fresh,
+        )
+        campaign.ensure_plan()
+        planned = campaign.planned_order_counts()
+        summary = campaign.run()
+        return planned, summary
+
+    def test_per_group_plan_counts_with_odd_pairs(self) -> None:
+        groups = self.two_groups_three_pairs()
+        planned, summary = self.run_campaign(groups, 6)
+        self.assertEqual(planned, {"old->new": 4, "new->old": 2})
+        payload = json.loads((self.out / "paired.json").read_text(encoding="utf-8"))
+        self.assertEqual(payload["order_balance"], "per-group")
+        self.assertEqual(payload["order_plan"], planned)
+        self.assertEqual(payload["missing_pairs"], [])
+        executed = {key: totals["pairs"] for key, totals in payload["orders"].items()}
+        self.assertEqual(executed, planned)
+
+    def test_cross_group_plan_continues_alternation(self) -> None:
+        groups = self.two_groups_three_pairs()
+        planned, summary = self.run_campaign(groups, 6, balance="cross-group")
+        self.assertEqual(planned, {"old->new": 3, "new->old": 3})
+        payload = json.loads((self.out / "paired.json").read_text(encoding="utf-8"))
+        second_group = [r for r in payload["records"] if r["group"] == groups[1].group_id]
+        # The first group consumed an odd number of slots, so the second
+        # group starts with new->old instead of restarting at old->new.
+        self.assertEqual(second_group[0]["planned_order"], ["new", "old"])
+
+    def test_interrupted_run_plan_executed_and_missing_stay_consistent(self) -> None:
+        groups = self.two_groups_three_pairs()
+        planned, first = self.run_campaign(groups, 4, fresh=True)
+        self.assertTrue(first.budget_exhausted)
+        self.assertEqual(first.pairs_executed, 4)
+        payload = json.loads((self.out / "paired.json").read_text(encoding="utf-8"))
+        self.assertEqual(payload["order_plan"], {"old->new": 4, "new->old": 2})
+        executed = {key: totals["pairs"] for key, totals in payload["orders"].items()}
+        self.assertEqual(executed, {"old->new": 3, "new->old": 1})
+        missing = payload["missing_pairs"]
+        self.assertEqual(len(missing), 2)
+        self.assertEqual(
+            [(m["group"], m["pair"]) for m in missing],
+            [(groups[1].group_id, 1), (groups[1].group_id, 2)],
+        )
+        self.assertEqual(missing[0]["planned_order"], ["new", "old"])
+        self.assertEqual(missing[1]["planned_order"], ["old", "new"])
+        self.assertTrue(all(m["reason"] == "budget_exhausted" for m in missing))
+        # Executed plus missing accounts for every planned order slot.
+        for key in planned:
+            done = executed.get(key, 0)
+            pending = sum(1 for m in missing if "->".join(m["planned_order"]) == key)
+            self.assertEqual(done + pending, planned[key])
+
+        # Resume with a *different* balance flag: the persisted plan wins
+        # and the alternation does not restart from old->new.
+        _planned, resumed = self.run_campaign(groups, 6, balance="cross-group")
+        self.assertTrue(resumed.resumed)
+        self.assertEqual(resumed.pairs_executed, 6)
+        payload = json.loads((self.out / "paired.json").read_text(encoding="utf-8"))
+        self.assertEqual(payload["order_balance"], "per-group")
+        self.assertEqual(payload["order_plan"], {"old->new": 4, "new->old": 2})
+        self.assertEqual(payload["missing_pairs"], [])
+        keys = [(r["group"], r["pair"]) for r in payload["records"]]
+        self.assertEqual(len(keys), len(set(keys)))
+        second_group = [r for r in payload["records"] if r["group"] == groups[1].group_id]
+        self.assertEqual(
+            [r["planned_order"] for r in second_group],
+            [["old", "new"], ["new", "old"], ["old", "new"]],
+        )
+        executed = {key: totals["pairs"] for key, totals in payload["orders"].items()}
+        self.assertEqual(executed, payload["order_plan"])
+
+
 if __name__ == "__main__":
     unittest.main()

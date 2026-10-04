@@ -198,3 +198,23 @@ python -m proto_robust.cli paired --goal goals/shared_file_pairs.json \
 ### 跨组统计与断点续跑
 
 `paired.json` 分别展示 `preparation_failed`、`timeout`、`valid`、`hits`/`misses`，并按组（`groups`）和按执行顺序（`orders`）分别汇总。每对执行后原子写入 `paired.checkpoint.json`（下一个待执行组/对、已执行记录）；中断后用相同 `--output` 再跑即从未执行的组继续，已执行配对不重复、不重新计费，`--fresh` 可忽略旧检查点。
+
+## 配对执行顺序平衡（第六轮增强）
+
+`paired` 子命令的执行顺序交替现在显式可选，并在第一对执行前显示各顺序的计划数量：
+
+```bash
+python -m proto_robust.cli paired --goal goals/shared_file_pairs.json \
+  --output results/paired-balanced --cases 6 --timeout 1.5 \
+  --order-balance cross-group
+# 先打印：order_balance=cross-group planned: new->old=3 old->new=3
+```
+
+- `--order-balance per-group`（默认）：每组内部独立交替 旧→新 / 新→旧，组内配对数为奇数时该组多一次 旧→新。
+- `--order-balance cross-group`：交替跨组连续进行，前一组消耗奇数个位置时，后一组从 新→旧 开始，整体两种顺序数量保持平衡。
+
+### 计划、续接与缺失说明
+
+- 完整顺序计划在首次执行前计算并打印，同时写入 `paired.checkpoint.json` 的 `order_plan`；中断续接时**沿用原计划**，即使再次运行时传入不同的 `--order-balance` 也不会重算，交替不会因重开而重新从 旧→新 开始。
+- 准备失败（`preparation_failed`）和目标超时（`timeout`）的配对照常占用其计划顺序位置，记录保留，不补抽样。
+- `paired.json` 中 `order_plan` 给出各执行顺序的计划数量，`orders` 给出实际执行数量，`missing_pairs` 逐条列出因预算中止而未执行的配对（组、对序号、计划顺序、原因），三者一致：每个顺序的 已执行 + 缺失 = 计划。

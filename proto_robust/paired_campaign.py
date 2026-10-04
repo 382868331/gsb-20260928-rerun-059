@@ -9,9 +9,20 @@ by per-file SHA-256 evidence, never by the directory merely existing.
 
 If the preparation cannot be restored for one side, the pair is recorded
 as preparation_failed with the failure location and the parts that
-actually ran; the pair is never re-sampled to complete it.  The campaign
-checkpoints after every pair, so an interrupted run resumes from the
-first unexecuted pair of the first unfinished group.
+actually ran; the pair is never re-sampled to complete it.  The same
+holds for target timeouts: both occupy their planned order slot.
+
+Execution-order balancing is explicit.  With ``per-group`` balance each
+group alternates old->new / new->old independently (an odd-sized group
+therefore contributes one extra old->new pair).  With ``cross-group``
+balance the alternation continues across group boundaries, so a group
+following an odd-sized group starts with new->old.  The full plan is
+computed once, shown before the first pair runs, persisted in the
+checkpoint, and reused verbatim on resume -- an interrupted run never
+restarts the alternation from old->new.  The summary reports planned
+counts per order, actually executed counts per order, and the missing
+pairs (with their planned orders) when the budget stops the campaign
+early.
 """
 
 from __future__ import annotations
@@ -88,7 +99,10 @@ def _matches_expected(result_payload: dict, expected: dict) -> bool:
 class PairedReplayCampaign:
     def __init__(self, groups: list[PairedGroupSpec], old: VersionSpec, new: VersionSpec,
                  budget: Budget, output_dir: str | Path, seed: int,
-                 restore_between_sides: bool = True, fresh: bool = False) -> None:
+                 restore_between_sides: bool = True, fresh: bool = False,
+                 order_balance: str = "per-group") -> None:
+        if order_balance not in ("per-group", "cross-group"):
+            raise ValueError(f"unknown order balance: {order_balance}")
         self.groups = groups
         self.versions = {old.identity: old, new.identity: new}
         self.order = (old, new)
@@ -97,14 +111,29 @@ class PairedReplayCampaign:
         self.seed = seed
         self.restore_between_sides = restore_between_sides
         self.fresh = fresh
+        self.order_balance = order_balance
         self.records: list[dict] = []
         self.spent = 0
         self.resumed = False
+        self._plan: dict[tuple[str, int], tuple] = {}
+
+    def ensure_plan(self) -> None:
+        """Load any checkpoint and build the execution-order plan.
+
+        Called implicitly by run(); callers may invoke it beforehand to
+        display the planned counts per execution order.
+        """
+        if not self._plan:
+            if not self.fresh:
+                self._load_checkpoint()
+            if not self._plan:
+                self._plan = self._build_plan(self.order_balance)
 
     def run(self) -> PairedSummary:
         start = time.monotonic()
-        if not self.fresh:
+        if not self.resumed and not self.fresh:
             self._load_checkpoint()
+        self.ensure_plan()
         exhausted = False
         for group_index, group in enumerate(self.groups):
             snapshot_dir = self._snapshot_dir(group)
@@ -116,7 +145,7 @@ class PairedReplayCampaign:
                 if self.spent >= self.budget.max_cases:
                     exhausted = True
                     break
-                order = self._pair_order(pair_index)
+                order = self._plan[(group.group_id, pair_index)]
                 record = self._run_pair(group, pair_index, order)
                 self.records.append(record)
                 self.spent += 1
@@ -140,10 +169,40 @@ class PairedReplayCampaign:
         self._write_summary(summary)
         return summary
 
-    def _pair_order(self, pair_index: int) -> tuple:
-        if pair_index % 2 == 1:
-            return (self.order[1], self.order[0])
-        return self.order
+    def _build_plan(self, balance: str) -> dict[tuple[str, int], tuple]:
+        plan: dict[tuple[str, int], tuple] = {}
+        counter = 0
+        for group in self.groups:
+            for pair_index in range(group.pairs):
+                slot = counter if balance == "cross-group" else pair_index
+                if slot % 2 == 1:
+                    plan[(group.group_id, pair_index)] = (self.order[1], self.order[0])
+                else:
+                    plan[(group.group_id, pair_index)] = self.order
+                counter += 1
+        return plan
+
+    def planned_order_counts(self) -> dict:
+        counts: dict[str, int] = {}
+        for order in self._plan.values():
+            key = "->".join(version.identity for version in order)
+            counts[key] = counts.get(key, 0) + 1
+        return counts
+
+    def missing_pairs(self) -> list[dict]:
+        missing = []
+        for group in self.groups:
+            for pair_index in range(group.pairs):
+                if self._pair_done(group.group_id, pair_index):
+                    continue
+                order = self._plan[(group.group_id, pair_index)]
+                missing.append({
+                    "group": group.group_id,
+                    "pair": pair_index,
+                    "planned_order": [version.identity for version in order],
+                    "reason": "budget_exhausted",
+                })
+        return missing
 
     def _pair_done(self, group_id: str, pair_index: int) -> bool:
         return any(
@@ -246,6 +305,11 @@ class PairedReplayCampaign:
             "next": next_position,
             "groups_complete": sorted(done),
             "restore_between_sides": self.restore_between_sides,
+            "order_balance": self.order_balance,
+            "order_plan": {
+                f"{group_id}:{pair_index}": [version.identity for version in order]
+                for (group_id, pair_index), order in self._plan.items()
+            },
             "versions": {name: spec.to_dict() for name, spec in self.versions.items()},
             "records": self.records,
         }
@@ -259,6 +323,17 @@ class PairedReplayCampaign:
         self.records = list(payload.get("records", []))
         self.spent = int(payload.get("spent", len(self.records)))
         self.resumed = True
+        # Resume reuses the persisted plan verbatim: the alternation never
+        # restarts from old->new just because the campaign was reopened.
+        saved_plan = payload.get("order_plan")
+        if saved_plan:
+            self.order_balance = payload.get("order_balance", self.order_balance)
+            self._plan = {}
+            for key, identities in saved_plan.items():
+                group_id, pair_index = key.rsplit(":", 1)
+                self._plan[(group_id, int(pair_index))] = tuple(
+                    self.versions[identity] for identity in identities
+                )
 
     def _write_summary(self, summary: PairedSummary) -> None:
         groups_payload = []
@@ -279,6 +354,8 @@ class PairedReplayCampaign:
             "resumed": summary.resumed,
             "budget_exhausted": summary.budget_exhausted,
             "restore_between_sides": self.restore_between_sides,
+            "order_balance": self.order_balance,
+            "order_plan": self.planned_order_counts(),
             "budget": {
                 "max_pairs": self.budget.max_cases,
                 "timeout": self.budget.timeout,
@@ -288,6 +365,7 @@ class PairedReplayCampaign:
             "totals": summary.totals,
             "groups": groups_payload,
             "orders": {key: self._totals(records) for key, records in orders.items()},
+            "missing_pairs": self.missing_pairs(),
             "records": self.records,
             "files": [CHECKPOINT_NAME, SUMMARY_NAME],
         }

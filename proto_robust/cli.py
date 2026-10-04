@@ -64,6 +64,10 @@ def build_parser() -> argparse.ArgumentParser:
     paired.add_argument("--describe", default=DEFAULT_SHARED_DESCRIBE)
     paired.add_argument("--old-identity", default="old")
     paired.add_argument("--new-identity", default="new")
+    paired.add_argument("--order-balance", choices=("per-group", "cross-group"),
+                        default="per-group",
+                        help="Alternate pair order independently inside each group "
+                             "or continuously across group boundaries")
     paired.add_argument("--no-restore", action="store_true",
                         help="Only restore the frozen preparation before the first side "
                              "of each pair, exposing the second side to pollution")
@@ -166,7 +170,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _paired(args) -> int:
-    _goal, seed, pair_budget, timeout = _campaign_options(args)
+    # The paired goal file has no stateless 'target', so parse budget
+    # options directly instead of loading a ResearchGoal.
+    seed = args.seed if args.seed is not None else 20260929
+    pair_budget = args.cases if args.cases is not None else 128
+    timeout = args.timeout if args.timeout is not None else 1.0
     groups, goal_payload = load_paired_goal(args.goal or "goals/shared_file_pairs.json")
     if goal_payload.get("local_only") is False:
         raise SystemExit("this research build refuses non-local goals")
@@ -177,7 +185,12 @@ def _paired(args) -> int:
         args.output, seed,
         restore_between_sides=not args.no_restore,
         fresh=args.fresh,
+        order_balance=args.order_balance,
     )
+    campaign.ensure_plan()
+    planned = campaign.planned_order_counts()
+    plan_text = ' '.join(f'{key}={count}' for key, count in sorted(planned.items()))
+    print(f'order_balance={campaign.order_balance} planned: {plan_text}')
     summary = campaign.run()
     totals = summary.totals
     print(f"seed={summary.seed} pairs={summary.pairs_executed} "
