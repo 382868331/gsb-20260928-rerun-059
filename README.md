@@ -170,3 +170,30 @@ python -m proto_robust.cli compare \
 
 摘要中 `outcomes` 分别列出有效试验（`valid`，命中+拒绝）、`hit`、`rejected`、`timeout`、`preparation_failed` 与 `incomplete`；`order_conditioned_notes` 用文字说明哪些结论仍受顺序条件限制。最终保留的候选（`final.sequence.json`）可按记录的双方起点、按原顺序重新演示。
 - `differential.json`：预算、恢复标记、版本身份、输入顺序和四类结果汇总。
+
+## 配对组准备快照与顺序污染（第五轮增强）
+
+两个版本共享真实文件状态时，一侧的运行会改变另一侧的起点。`compare-groups` 把配对组织成若干组，每组先冻结一份**可核对的准备快照**，再让不同执行顺序的配对从同一份明确状态起点运行：
+
+```bash
+python -m proto_robust.cli compare-groups \
+  results/session-core-demo/<stem>.original.sequence.json \
+  --old-replay targets.session_store_shared.replay \
+  --new-replay targets.session_store_shared_new.replay \
+  --groups 2 --pairs-per-group 2 --order alternating \
+  --output results/paired-groups-demo --cases 20 --timeout 2.0
+```
+
+### 可核对的准备快照
+
+- `proto_robust/preparation.py` 把共享状态目录冻结为 `snapshots/group-<n>/`：清单记录每个文件的路径、大小与 sha256 及整组摘要摘要。冻结后的快照不可重写。
+- 每一侧运行前都从本组快照恢复，并**逐文件比对 sha256** 验证；核对证据（期望/实际哈希、缺失、多余文件）写入该对的 `preparation` 字段。仅凭目录存在不算准备成功。
+- 一侧运行后无法恢复准备状态（如目标留下不可移除产物）时，该对记为 `preparation_failed`，保留失败位置（`restore:before-new-after-old` 等）与实际已运行一侧的完整结果；不会重新抽取有利样本补成完整配对。
+
+### 真实共享文件目标
+
+`targets/session_store_shared.py` 把事务日志写入共享目录（`GSB_SHARED_STATE_DIR`）：旧版 COMMIT 先追加日志再触发原有缺陷，因此旧→新顺序下新版从被污染的日志起点运行，其提交表偏移被顶出界而崩溃；新→旧顺序则不受影响。`--no-restore` 对照运行（见 `results/paired-groups-polluted`）显示 `order_dependent:new->old`；开启保存恢复后（`results/paired-groups-demo`）两种顺序命中数一致，结论为 `both_orders`，统计口径不随执行顺序改变。
+
+### 跨组统计与断点续跑
+
+`paired.json` 分别汇总准备失败（`preparation_failed`）、目标超时（`timeout`）、有效配对（`valid`）、命中（`hit`）与未完成（`incomplete`），并按组列出每组快照摘要与计数。`paired.checkpoint.json` 在每一对后原子记录下一个待执行组/对；中断后用相同 `--output` 重跑会从未执行组继续，已冻结的组快照原样复用、已记账配对不重复计数。

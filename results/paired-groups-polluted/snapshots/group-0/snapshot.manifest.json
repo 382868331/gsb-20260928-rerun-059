@@ -1,0 +1,11 @@
+{
+  "source": "results/paired-groups-polluted/state_seed",
+  "files": [
+    {
+      "path": "journal.log",
+      "size": 8,
+      "sha256": "741d772c2c79fe41356302cc1cb548b15eb071dee8849c5278d0269a5bc36e71"
+    }
+  ],
+  "manifest_sha256": "ade1fce59e6e7e16aab1981756340294073f1471c815b4052319e545a38e3871"
+}

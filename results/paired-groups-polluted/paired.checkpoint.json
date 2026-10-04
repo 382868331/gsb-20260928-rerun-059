@@ -1,0 +1,758 @@
+{
+  "seed": 20260929,
+  "pairs_executed": 4,
+  "groups": 2,
+  "pairs_per_group": 2,
+  "order_mode": "alternating",
+  "restore_enabled": false,
+  "next_group": 2,
+  "next_pair": 0,
+  "condition": {
+    "kind": "old_reproducible_new_absent",
+    "old": {
+      "identity": "old",
+      "replay": "targets.session_store_shared.replay",
+      "describe": "targets.session_store.describe_state"
+    },
+    "new": {
+      "identity": "new",
+      "replay": "targets.session_store_shared_new.replay",
+      "describe": "targets.session_store.describe_state"
+    },
+    "old_signature": {
+      "outcome": "crash",
+      "exception_type": "IndexError",
+      "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store.py",
+      "fault_function": "replay",
+      "fault_line": 193,
+      "state_path": "selected/mode=read/bucket=mirror",
+      "step_key_conditions": [
+        {
+          "step": 4,
+          "offset": 0,
+          "value": 80
+        },
+        {
+          "step": 4,
+          "offset": 1,
+          "value": 3
+        }
+      ],
+      "key": "crash:IndexError@replay:193#selected/mode=read/bucket=mirror"
+    }
+  },
+  "records": [
+    {
+      "group": 0,
+      "pair": 0,
+      "name": "group-0-pair-0",
+      "input_order": [
+        "old",
+        "new"
+      ],
+      "execution_order": [
+        "old",
+        "new"
+      ],
+      "snapshot": "results/paired-groups-polluted/snapshots/group-0",
+      "snapshot_manifest_sha256": "ade1fce59e6e7e16aab1981756340294073f1471c815b4052319e545a38e3871",
+      "restore_enabled": false,
+      "preparation": {},
+      "old": {
+        "outcome": "crash",
+        "start_state": "closed",
+        "end_state": "selected",
+        "duration": 0.7977320829959353,
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store.py",
+        "fault_function": "replay",
+        "fault_line": 193,
+        "state_path": "selected/mode=read/bucket=mirror",
+        "key_conditions": [
+          {
+            "step": 4,
+            "offset": 0,
+            "value": 80
+          },
+          {
+            "step": 4,
+            "offset": 1,
+            "value": 3
+          }
+        ],
+        "failing_step": 4,
+        "exit_code": 0,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 1.7402002413291484e-05
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 1.1200994777027518e-05
+          },
+          {
+            "step": 2,
+            "name": "select-bucket-2",
+            "hex": "300200",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "selected",
+            "duration": 6.500995368696749e-06
+          },
+          {
+            "step": 3,
+            "name": "set-context",
+            "hex": "40050141",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 7.800001185387373e-06
+          },
+          {
+            "step": 4,
+            "name": "commit-overread",
+            "hex": "5003015a",
+            "outcome": "crash",
+            "exception_type": "IndexError",
+            "message": "tuple index out of range",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 0.0002871329998015426
+          }
+        ]
+      },
+      "new": {
+        "outcome": "crash",
+        "start_state": "closed",
+        "end_state": "selected",
+        "duration": 0.8018322569987504,
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store_shared_new.py",
+        "fault_function": "replay",
+        "fault_line": 38,
+        "state_path": "",
+        "key_conditions": [],
+        "failing_step": 4,
+        "exit_code": 0,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 1.980199886020273e-05
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 1.290200452785939e-05
+          },
+          {
+            "step": 2,
+            "name": "select-bucket-2",
+            "hex": "300200",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "selected",
+            "duration": 7.000999175943434e-06
+          },
+          {
+            "step": 3,
+            "name": "set-context",
+            "hex": "40050141",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 8.001006790436804e-06
+          },
+          {
+            "step": 4,
+            "name": "commit-overread",
+            "hex": "5003015a",
+            "outcome": "crash",
+            "exception_type": "IndexError",
+            "message": "tuple index out of range",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 0.00021512399689527228
+          }
+        ]
+      },
+      "executed_sides": [
+        "old",
+        "new"
+      ],
+      "failure_position": "",
+      "disposition": "rejected"
+    },
+    {
+      "group": 0,
+      "pair": 1,
+      "name": "group-0-pair-1",
+      "input_order": [
+        "old",
+        "new"
+      ],
+      "execution_order": [
+        "new",
+        "old"
+      ],
+      "snapshot": "results/paired-groups-polluted/snapshots/group-0",
+      "snapshot_manifest_sha256": "ade1fce59e6e7e16aab1981756340294073f1471c815b4052319e545a38e3871",
+      "restore_enabled": false,
+      "preparation": {},
+      "old": {
+        "outcome": "crash",
+        "start_state": "closed",
+        "end_state": "selected",
+        "duration": 0.8039357000016025,
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store.py",
+        "fault_function": "replay",
+        "fault_line": 193,
+        "state_path": "selected/mode=read/bucket=mirror",
+        "key_conditions": [
+          {
+            "step": 4,
+            "offset": 0,
+            "value": 80
+          },
+          {
+            "step": 4,
+            "offset": 1,
+            "value": 3
+          }
+        ],
+        "failing_step": 4,
+        "exit_code": 0,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 1.8001999706029892e-05
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 1.090099976863712e-05
+          },
+          {
+            "step": 2,
+            "name": "select-bucket-2",
+            "hex": "300200",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "selected",
+            "duration": 6.299997039604932e-06
+          },
+          {
+            "step": 3,
+            "name": "set-context",
+            "hex": "40050141",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 7.000999175943434e-06
+          },
+          {
+            "step": 4,
+            "name": "commit-overread",
+            "hex": "5003015a",
+            "outcome": "crash",
+            "exception_type": "IndexError",
+            "message": "tuple index out of range",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 0.0002651309987413697
+          }
+        ]
+      },
+      "new": {
+        "outcome": "rejected",
+        "start_state": "closed",
+        "end_state": "selected",
+        "duration": 0.7665606770024169,
+        "exception_type": "SessionReject",
+        "message": "unknown commit operation",
+        "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store_shared_new.py",
+        "fault_function": "replay",
+        "fault_line": 41,
+        "state_path": "",
+        "key_conditions": [],
+        "failing_step": 4,
+        "exit_code": 0,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 1.9901999621652067e-05
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 4.2905005102511495e-05
+          },
+          {
+            "step": 2,
+            "name": "select-bucket-2",
+            "hex": "300200",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "selected",
+            "duration": 7.599999662488699e-06
+          },
+          {
+            "step": 3,
+            "name": "set-context",
+            "hex": "40050141",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 8.500996045768261e-06
+          },
+          {
+            "step": 4,
+            "name": "commit-overread",
+            "hex": "5003015a",
+            "outcome": "rejected",
+            "exception_type": "SessionReject",
+            "message": "unknown commit operation",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 0.0002039239989244379
+          }
+        ]
+      },
+      "executed_sides": [
+        "new",
+        "old"
+      ],
+      "failure_position": "",
+      "disposition": "hit"
+    },
+    {
+      "group": 1,
+      "pair": 0,
+      "name": "group-1-pair-0",
+      "input_order": [
+        "old",
+        "new"
+      ],
+      "execution_order": [
+        "old",
+        "new"
+      ],
+      "snapshot": "results/paired-groups-polluted/snapshots/group-1",
+      "snapshot_manifest_sha256": "ade1fce59e6e7e16aab1981756340294073f1471c815b4052319e545a38e3871",
+      "restore_enabled": false,
+      "preparation": {},
+      "old": {
+        "outcome": "crash",
+        "start_state": "closed",
+        "end_state": "selected",
+        "duration": 0.7594970599966473,
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store.py",
+        "fault_function": "replay",
+        "fault_line": 193,
+        "state_path": "selected/mode=read/bucket=mirror",
+        "key_conditions": [
+          {
+            "step": 4,
+            "offset": 0,
+            "value": 80
+          },
+          {
+            "step": 4,
+            "offset": 1,
+            "value": 3
+          }
+        ],
+        "failing_step": 4,
+        "exit_code": 0,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 1.6602003597654402e-05
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 1.1402000382076949e-05
+          },
+          {
+            "step": 2,
+            "name": "select-bucket-2",
+            "hex": "300200",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "selected",
+            "duration": 6.000998837407678e-06
+          },
+          {
+            "step": 3,
+            "name": "set-context",
+            "hex": "40050141",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 7.200993422884494e-06
+          },
+          {
+            "step": 4,
+            "name": "commit-overread",
+            "hex": "5003015a",
+            "outcome": "crash",
+            "exception_type": "IndexError",
+            "message": "tuple index out of range",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 0.00026443100068718195
+          }
+        ]
+      },
+      "new": {
+        "outcome": "crash",
+        "start_state": "closed",
+        "end_state": "selected",
+        "duration": 0.8411272020020988,
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store_shared_new.py",
+        "fault_function": "replay",
+        "fault_line": 38,
+        "state_path": "",
+        "key_conditions": [],
+        "failing_step": 4,
+        "exit_code": 0,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 1.8202001228928566e-05
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 1.2402000720612705e-05
+          },
+          {
+            "step": 2,
+            "name": "select-bucket-2",
+            "hex": "300200",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "selected",
+            "duration": 7.501002983190119e-06
+          },
+          {
+            "step": 3,
+            "name": "set-context",
+            "hex": "40050141",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 7.800997991580516e-06
+          },
+          {
+            "step": 4,
+            "name": "commit-overread",
+            "hex": "5003015a",
+            "outcome": "crash",
+            "exception_type": "IndexError",
+            "message": "tuple index out of range",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 0.00020942399714840576
+          }
+        ]
+      },
+      "executed_sides": [
+        "old",
+        "new"
+      ],
+      "failure_position": "",
+      "disposition": "rejected"
+    },
+    {
+      "group": 1,
+      "pair": 1,
+      "name": "group-1-pair-1",
+      "input_order": [
+        "old",
+        "new"
+      ],
+      "execution_order": [
+        "new",
+        "old"
+      ],
+      "snapshot": "results/paired-groups-polluted/snapshots/group-1",
+      "snapshot_manifest_sha256": "ade1fce59e6e7e16aab1981756340294073f1471c815b4052319e545a38e3871",
+      "restore_enabled": false,
+      "preparation": {},
+      "old": {
+        "outcome": "crash",
+        "start_state": "closed",
+        "end_state": "selected",
+        "duration": 0.8313724689942319,
+        "exception_type": "IndexError",
+        "message": "tuple index out of range",
+        "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store.py",
+        "fault_function": "replay",
+        "fault_line": 193,
+        "state_path": "selected/mode=read/bucket=mirror",
+        "key_conditions": [
+          {
+            "step": 4,
+            "offset": 0,
+            "value": 80
+          },
+          {
+            "step": 4,
+            "offset": 1,
+            "value": 3
+          }
+        ],
+        "failing_step": 4,
+        "exit_code": 0,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 1.7901998944580555e-05
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 1.1600997822824866e-05
+          },
+          {
+            "step": 2,
+            "name": "select-bucket-2",
+            "hex": "300200",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "selected",
+            "duration": 6.300004315562546e-06
+          },
+          {
+            "step": 3,
+            "name": "set-context",
+            "hex": "40050141",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 7.601003744639456e-06
+          },
+          {
+            "step": 4,
+            "name": "commit-overread",
+            "hex": "5003015a",
+            "outcome": "crash",
+            "exception_type": "IndexError",
+            "message": "tuple index out of range",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 0.00030213500576792285
+          }
+        ]
+      },
+      "new": {
+        "outcome": "rejected",
+        "start_state": "closed",
+        "end_state": "selected",
+        "duration": 0.8001834660026361,
+        "exception_type": "SessionReject",
+        "message": "unknown commit operation",
+        "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store_shared_new.py",
+        "fault_function": "replay",
+        "fault_line": 41,
+        "state_path": "",
+        "key_conditions": [],
+        "failing_step": 4,
+        "exit_code": 0,
+        "steps": [
+          {
+            "step": 0,
+            "name": "open",
+            "hex": "100000",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "closed",
+            "state_after": "open",
+            "duration": 1.9002000044565648e-05
+          },
+          {
+            "step": 1,
+            "name": "prepare-mode-1",
+            "hex": "200100",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "open",
+            "state_after": "armed",
+            "duration": 2.190200029872358e-05
+          },
+          {
+            "step": 2,
+            "name": "select-bucket-2",
+            "hex": "300200",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "armed",
+            "state_after": "selected",
+            "duration": 1.2201002391520888e-05
+          },
+          {
+            "step": 3,
+            "name": "set-context",
+            "hex": "40050141",
+            "outcome": "ok",
+            "exception_type": "",
+            "message": "",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 1.0001996997743845e-05
+          },
+          {
+            "step": 4,
+            "name": "commit-overread",
+            "hex": "5003015a",
+            "outcome": "rejected",
+            "exception_type": "SessionReject",
+            "message": "unknown commit operation",
+            "state_before": "selected",
+            "state_after": "selected",
+            "duration": 0.0002482290001353249
+          }
+        ]
+      },
+      "executed_sides": [
+        "new",
+        "old"
+      ],
+      "failure_position": "",
+      "disposition": "hit"
+    }
+  ]
+}

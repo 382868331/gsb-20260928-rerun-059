@@ -1,0 +1,114 @@
+{
+  "seed": 20260929,
+  "pairs_executed": 4,
+  "groups_total": 2,
+  "groups_completed": 2,
+  "groups_remaining": 0,
+  "duration": 6.425460999998904,
+  "budget": {
+    "max_pairs": 20,
+    "timeout": 2.0
+  },
+  "budget_exhausted": false,
+  "resumed": false,
+  "restore_enabled": false,
+  "order_mode": "alternating",
+  "condition": {
+    "kind": "old_reproducible_new_absent",
+    "old": {
+      "identity": "old",
+      "replay": "targets.session_store_shared.replay",
+      "describe": "targets.session_store.describe_state"
+    },
+    "new": {
+      "identity": "new",
+      "replay": "targets.session_store_shared_new.replay",
+      "describe": "targets.session_store.describe_state"
+    },
+    "old_signature": {
+      "outcome": "crash",
+      "exception_type": "IndexError",
+      "fault_file": "/做题/题目/20261004-followup150/139-source059/B/attempts/001/workspace/targets/session_store.py",
+      "fault_function": "replay",
+      "fault_line": 193,
+      "state_path": "selected/mode=read/bucket=mirror",
+      "step_key_conditions": [
+        {
+          "step": 4,
+          "offset": 0,
+          "value": 80
+        },
+        {
+          "step": 4,
+          "offset": 1,
+          "value": 3
+        }
+      ],
+      "key": "crash:IndexError@replay:193#selected/mode=read/bucket=mirror"
+    }
+  },
+  "outcomes": {
+    "hit": 2,
+    "rejected": 2,
+    "timeout": 0,
+    "preparation_failed": 0,
+    "incomplete": 0,
+    "valid": 4
+  },
+  "groups_detail": [
+    {
+      "group": 0,
+      "executed": true,
+      "pairs": 2,
+      "snapshot_manifest_sha256": "ade1fce59e6e7e16aab1981756340294073f1471c815b4052319e545a38e3871",
+      "counts": {
+        "hit": 1,
+        "rejected": 1,
+        "timeout": 0,
+        "preparation_failed": 0,
+        "incomplete": 0,
+        "valid": 2
+      }
+    },
+    {
+      "group": 1,
+      "executed": true,
+      "pairs": 2,
+      "snapshot_manifest_sha256": "ade1fce59e6e7e16aab1981756340294073f1471c815b4052319e545a38e3871",
+      "counts": {
+        "hit": 1,
+        "rejected": 1,
+        "timeout": 0,
+        "preparation_failed": 0,
+        "incomplete": 0,
+        "valid": 2
+      }
+    }
+  ],
+  "order_conclusion": {
+    "orders": {
+      "old->new": {
+        "valid": 2,
+        "hit": 0,
+        "rejected": 2,
+        "timeout": 0
+      },
+      "new->old": {
+        "valid": 2,
+        "hit": 2,
+        "rejected": 0,
+        "timeout": 0
+      }
+    },
+    "verdict": "order_dependent:new->old",
+    "order_conditioned": true,
+    "explanation": "the difference only appeared when the execution order was new->old; it remains conditioned on that order"
+  },
+  "order_conditioned_notes": [
+    "cross-group conclusion remains order-conditioned: the difference only appeared when the execution order was new->old; it remains conditioned on that order"
+  ],
+  "files": [
+    "paired.checkpoint.json",
+    "paired.json"
+  ]
+}

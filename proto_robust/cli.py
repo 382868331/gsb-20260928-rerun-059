@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 from proto_robust.differential_campaign import DifferentialCampaign, condition_from_old_result
 from proto_robust.differential import VersionSpec
@@ -50,6 +51,27 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--order", choices=("fixed", "alternating"), default="fixed",
                         help="Execution order of the two versions inside each paired round")
     _add_campaign_args(compare)
+
+    groups = subparsers.add_parser(
+        "compare-groups",
+        help="Paired replay over groups sharing a frozen, verifiable preparation snapshot",
+    )
+    groups.add_argument("sequence_file")
+    groups.add_argument("--old-replay", default="targets.session_store_shared.replay")
+    groups.add_argument("--new-replay", default="targets.session_store_shared_new.replay")
+    groups.add_argument("--describe", default=DEFAULT_SESSION_DESCRIBE)
+    groups.add_argument("--old-identity", default="old")
+    groups.add_argument("--new-identity", default="new")
+    groups.add_argument("--difference", choices=("old_reproducible_new_absent", "different_location"),
+                        default="old_reproducible_new_absent")
+    groups.add_argument("--order", choices=("fixed", "alternating"), default="alternating",
+                        help="Execution order plan across pairs")
+    groups.add_argument("--groups", type=int, default=2, help="Number of snapshot groups")
+    groups.add_argument("--pairs-per-group", type=int, default=2)
+    groups.add_argument("--no-restore", action="store_true",
+                        help="Do not restore the frozen snapshot between the two sides "
+                             "of a pair (control run showing order pollution)")
+    _add_campaign_args(groups)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
     _add_campaign_args(parser)
@@ -142,6 +164,8 @@ def main(argv: list[str] | None = None) -> int:
         return _replay(args)
     if args.command == "compare":
         return _compare(args)
+    if args.command == "compare-groups":
+        return _compare_groups(args)
     return _run_stateless(args)
 
 
@@ -168,6 +192,43 @@ def _compare(args) -> int:
     print(f"seed={summary.seed} pair_attempts={summary.pair_attempts} "
           f"accepted={summary.accepted_candidates} output={summary.output_dir}")
     return 0 if summary.accepted_candidates else 1
+
+
+def _compare_groups(args) -> int:
+    import os
+
+    from proto_robust.paired_groups import PairedGroupCampaign
+
+    _goal, seed, pair_budget, timeout = _campaign_options(args)
+    sequence = SessionSequence.load(args.sequence_file)
+    old_version = VersionSpec(args.old_identity, args.old_replay, args.describe)
+    new_version = VersionSpec(args.new_identity, args.new_replay, args.describe)
+    scratch = Path(args.output) / "setup_state"
+    scratch.mkdir(parents=True, exist_ok=True)
+    os.environ["GSB_SHARED_STATE_DIR"] = str(scratch)
+    try:
+        old_result = replay_sequence_isolated(sequence, old_version.replay_name,
+                                              old_version.describe_name, timeout,
+                                              attempt_namespace="groups-setup-old")
+        new_result = replay_sequence_isolated(sequence, new_version.replay_name,
+                                              new_version.describe_name, timeout,
+                                              attempt_namespace="groups-setup-new")
+    finally:
+        os.environ.pop("GSB_SHARED_STATE_DIR", None)
+    new_signature = signature_from_result(new_result) if args.difference == "different_location" else None
+    condition = condition_from_old_result(
+        old_result, args.difference, old_version, new_version, new_signature
+    )
+    campaign = PairedGroupCampaign(
+        sequence, condition, Budget(pair_budget, timeout, args.wall_time),
+        args.output, seed, groups=args.groups, pairs_per_group=args.pairs_per_group,
+        order_mode=args.order, restore_enabled=not args.no_restore, fresh=args.fresh,
+    )
+    summary = campaign.run()
+    print(f"seed={summary.seed} pairs={summary.pairs_executed} "
+          f"groups={summary.groups_completed}/{summary.groups_total} "
+          f"output={summary.output_dir}")
+    return 0
 
 
 if __name__ == "__main__":
