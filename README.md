@@ -198,3 +198,12 @@ python -m proto_robust.cli paired --goal goals/shared_file_pairs.json \
 ### 跨组统计与断点续跑
 
 `paired.json` 分别展示 `preparation_failed`、`timeout`、`valid`、`hits`/`misses`，并按组（`groups`）和按执行顺序（`orders`）分别汇总。每对执行后原子写入 `paired.checkpoint.json`（下一个待执行组/对、已执行记录）；中断后用相同 `--output` 再跑即从未执行的组继续，已执行配对不重复、不重新计费，`--fresh` 可忽略旧检查点。
+
+### 配对执行顺序的平衡策略（第六轮增强）
+
+组内配对数为奇数时，交替计数方式由 `--order-strategy` 选择：
+
+- `cross-group`（默认）：全部组共用一个交替计数器，奇数组的末尾顺序会延续到下一组开头，全局 旧→新 / 新→旧 数量保持平衡。
+- `per-group`：每组独立从 旧→新 重新开始交替，奇数对组会各多一次 旧→新，便于逐组对比同一顺序序列。
+
+运行开始前会打印各执行顺序的计划数量（`planned pairs=N strategy=... old->new=x new->old=y`），完整计划（每对的组号、对号、计划顺序）随检查点持久化。中断续接沿用检查点中的原计划：即使重开时指定了另一种策略，也不会重新从旧版本开始交替。准备失败与目标超时的配对仍占用其原计划顺序位置，不补抽样；`paired.json` 中 `planned_orders`（计划数量）、`orders`（实际执行）与 `missing_pairs`（未执行配对及其原因，如 `budget_exhausted`）三者始终对账一致：计划数 = 实际执行数 + 缺失数。

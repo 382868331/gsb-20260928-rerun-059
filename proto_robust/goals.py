@@ -17,7 +17,7 @@ class ResearchGoal:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
         return cls(
             name=payload["name"],
-            target=payload["target"],
+            target=payload.get("target", ""),
             description=payload.get("description", ""),
             local_only=payload.get("local_only", True),
         )

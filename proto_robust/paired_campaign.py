@@ -37,6 +37,8 @@ CHECKPOINT_NAME = "paired.checkpoint.json"
 SUMMARY_NAME = "paired.json"
 SHARED_DIR_ENV = "SHARED_FILE_STATE_DIR"
 
+ORDER_STRATEGIES = ("cross_group", "per_group")
+
 
 @dataclass(frozen=True)
 class PairedGroupSpec:
@@ -88,7 +90,10 @@ def _matches_expected(result_payload: dict, expected: dict) -> bool:
 class PairedReplayCampaign:
     def __init__(self, groups: list[PairedGroupSpec], old: VersionSpec, new: VersionSpec,
                  budget: Budget, output_dir: str | Path, seed: int,
-                 restore_between_sides: bool = True, fresh: bool = False) -> None:
+                 restore_between_sides: bool = True, fresh: bool = False,
+                 order_strategy: str = "cross_group") -> None:
+        if order_strategy not in ORDER_STRATEGIES:
+            raise ValueError(f"unknown order strategy: {order_strategy}")
         self.groups = groups
         self.versions = {old.identity: old, new.identity: new}
         self.order = (old, new)
@@ -97,14 +102,69 @@ class PairedReplayCampaign:
         self.seed = seed
         self.restore_between_sides = restore_between_sides
         self.fresh = fresh
+        self.order_strategy = order_strategy
+        self.plan = self._build_plan(order_strategy)
         self.records: list[dict] = []
         self.spent = 0
         self.resumed = False
+        if not self.fresh:
+            self._load_checkpoint()
+
+    def _build_plan(self, strategy: str) -> list[dict]:
+        """Fix the planned execution order of every pair before any run.
+
+        cross_group: one alternation counter shared across groups, so odd
+        group sizes keep the global old->new / new->old counts balanced.
+        per_group: each group alternates independently from old->new, so an
+        odd-sized group ends with one extra old->new pair.
+        """
+        plan = []
+        global_index = 0
+        for group in self.groups:
+            for pair_index in range(group.pairs):
+                counter = pair_index if strategy == "per_group" else global_index
+                order = self.order if counter % 2 == 0 else (self.order[1], self.order[0])
+                plan.append({
+                    "group": group.group_id,
+                    "pair": pair_index,
+                    "planned_order": [version.identity for version in order],
+                })
+                global_index += 1
+        return plan
+
+    def planned_order_counts(self) -> dict:
+        counts: dict[str, int] = {}
+        for entry in self.plan:
+            key = "->".join(entry["planned_order"])
+            counts[key] = counts.get(key, 0) + 1
+        return counts
+
+    def _planned_order(self, group_id: str, pair_index: int) -> list:
+        for entry in self.plan:
+            if entry["group"] == group_id and entry["pair"] == pair_index:
+                return list(entry["planned_order"])
+        raise KeyError(f"pair not in plan: {group_id}#{pair_index}")
+
+    def missing_pairs(self) -> list[dict]:
+        """Planned pairs that never executed, with the reason they are absent.
+
+        Preparation failures and timeouts still occupy their planned slot, so
+        only pairs with no record at all appear here.
+        """
+        reason = "budget_exhausted" if self.spent >= self.budget.max_cases else "interrupted"
+        missing = []
+        for entry in self.plan:
+            if not self._pair_done(entry["group"], entry["pair"]):
+                missing.append({
+                    "group": entry["group"],
+                    "pair": entry["pair"],
+                    "planned_order": list(entry["planned_order"]),
+                    "reason": reason,
+                })
+        return missing
 
     def run(self) -> PairedSummary:
         start = time.monotonic()
-        if not self.fresh:
-            self._load_checkpoint()
         exhausted = False
         for group_index, group in enumerate(self.groups):
             snapshot_dir = self._snapshot_dir(group)
@@ -116,8 +176,7 @@ class PairedReplayCampaign:
                 if self.spent >= self.budget.max_cases:
                     exhausted = True
                     break
-                order = self._pair_order(pair_index)
-                record = self._run_pair(group, pair_index, order)
+                record = self._run_pair(group, pair_index)
                 self.records.append(record)
                 self.spent += 1
                 self._write_checkpoint()
@@ -140,11 +199,6 @@ class PairedReplayCampaign:
         self._write_summary(summary)
         return summary
 
-    def _pair_order(self, pair_index: int) -> tuple:
-        if pair_index % 2 == 1:
-            return (self.order[1], self.order[0])
-        return self.order
-
     def _pair_done(self, group_id: str, pair_index: int) -> bool:
         return any(
             record["group"] == group_id and record["pair"] == pair_index
@@ -160,11 +214,13 @@ class PairedReplayCampaign:
     def _restore_for_side(self, group: PairedGroupSpec) -> RestoreReport:
         return restore_preparation(self._snapshot_dir(group), self._runtime_dir())
 
-    def _run_pair(self, group: PairedGroupSpec, pair_index: int, order: tuple) -> dict:
+    def _run_pair(self, group: PairedGroupSpec, pair_index: int) -> dict:
+        planned = self._planned_order(group.group_id, pair_index)
+        order = tuple(self.versions[identity] for identity in planned)
         record = {
             "group": group.group_id,
             "pair": pair_index,
-            "planned_order": [version.identity for version in order],
+            "planned_order": planned,
             "executed": [],
             "sides": {},
             "disposition": None,
@@ -244,6 +300,8 @@ class PairedReplayCampaign:
             "seed": self.seed,
             "spent": self.spent,
             "next": next_position,
+            "order_strategy": self.order_strategy,
+            "plan": self.plan,
             "groups_complete": sorted(done),
             "restore_between_sides": self.restore_between_sides,
             "versions": {name: spec.to_dict() for name, spec in self.versions.items()},
@@ -259,6 +317,12 @@ class PairedReplayCampaign:
         self.records = list(payload.get("records", []))
         self.spent = int(payload.get("spent", len(self.records)))
         self.resumed = True
+        saved_plan = payload.get("plan")
+        if saved_plan:
+            # Resume keeps the original plan: a restarted run must not
+            # re-alternate from the old version or switch strategy.
+            self.plan = list(saved_plan)
+            self.order_strategy = str(payload.get("order_strategy", self.order_strategy))
 
     def _write_summary(self, summary: PairedSummary) -> None:
         groups_payload = []
@@ -279,6 +343,9 @@ class PairedReplayCampaign:
             "resumed": summary.resumed,
             "budget_exhausted": summary.budget_exhausted,
             "restore_between_sides": self.restore_between_sides,
+            "order_strategy": self.order_strategy,
+            "planned_orders": self.planned_order_counts(),
+            "missing_pairs": self.missing_pairs(),
             "budget": {
                 "max_pairs": self.budget.max_cases,
                 "timeout": self.budget.timeout,

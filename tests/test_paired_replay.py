@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import json
 import shutil
 import tempfile
@@ -196,6 +197,108 @@ class PairedReplayCampaignTests(unittest.TestCase):
         self.assertEqual(by_id["commit-table"]["hits"], 2)
         self.assertEqual(by_id["timing-stall"]["timeout"], 2)
         self.assertEqual(by_id["timing-stall"]["valid"], 0)
+
+
+class OrderStrategyTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.out = Path(self.tmp.name) / "paired"
+
+    @staticmethod
+    def two_groups_three_pairs() -> list[PairedGroupSpec]:
+        return [
+            dataclasses.replace(group, pairs=3)
+            for group in goal_groups()[:2]
+        ]
+
+    def run_campaign(self, cases: int, strategy: str, fresh: bool = False):
+        campaign = PairedReplayCampaign(
+            self.two_groups_three_pairs(), OLD, NEW, Budget(cases, TIMEOUT),
+            self.out, 20261005, order_strategy=strategy, fresh=fresh,
+        )
+        return campaign.run()
+
+    def summary_payload(self) -> dict:
+        return json.loads((self.out / "paired.json").read_text(encoding="utf-8"))
+
+    def test_per_group_odd_pairs_gives_each_group_one_extra_old_first(self) -> None:
+        self.run_campaign(cases=6, strategy="per_group", fresh=True)
+        payload = self.summary_payload()
+        self.assertEqual(payload["order_strategy"], "per_group")
+        self.assertEqual(payload["planned_orders"], {"old->new": 4, "new->old": 2})
+        for group_id in ("ledger-pollution", "commit-table"):
+            orders = [
+                r["planned_order"] for r in payload["records"] if r["group"] == group_id
+            ]
+            self.assertEqual(orders, [["old", "new"], ["new", "old"], ["old", "new"]])
+        self.assertEqual(payload["missing_pairs"], [])
+
+    def test_cross_group_odd_pairs_stays_globally_balanced(self) -> None:
+        self.run_campaign(cases=6, strategy="cross_group", fresh=True)
+        payload = self.summary_payload()
+        self.assertEqual(payload["planned_orders"], {"old->new": 3, "new->old": 3})
+        orders = [r["planned_order"] for r in payload["records"]]
+        self.assertEqual(
+            orders,
+            [["old", "new"], ["new", "old"]] * 3,
+        )
+
+    def test_resume_keeps_original_plan_and_counts_stay_consistent(self) -> None:
+        first = self.run_campaign(cases=3, strategy="per_group", fresh=True)
+        self.assertTrue(first.budget_exhausted)
+        payload = self.summary_payload()
+        self.assertEqual(payload["planned_orders"], {"old->new": 4, "new->old": 2})
+        executed = {"old->new": 0, "new->old": 0}
+        for record in payload["records"]:
+            executed["->".join(record["planned_order"])] += 1
+        missing = payload["missing_pairs"]
+        self.assertEqual(len(missing), 3)
+        self.assertTrue(all(item["reason"] == "budget_exhausted" for item in missing))
+        missing_counts = {"old->new": 0, "new->old": 0}
+        for item in missing:
+            missing_counts["->".join(item["planned_order"])] += 1
+        for key in ("old->new", "new->old"):
+            self.assertEqual(
+                payload["planned_orders"][key],
+                executed[key] + missing_counts[key],
+            )
+        # Resume with the opposite strategy: the saved plan must win, so the
+        # run must not re-alternate from the old version.
+        resumed = self.run_campaign(cases=6, strategy="cross_group")
+        self.assertTrue(resumed.resumed)
+        self.assertEqual(resumed.pairs_executed, 6)
+        payload = self.summary_payload()
+        self.assertEqual(payload["order_strategy"], "per_group")
+        self.assertEqual(payload["planned_orders"], {"old->new": 4, "new->old": 2})
+        self.assertEqual(payload["missing_pairs"], [])
+        keys = [(r["group"], r["pair"]) for r in payload["records"]]
+        self.assertEqual(len(keys), len(set(keys)))
+        for group_id in ("ledger-pollution", "commit-table"):
+            orders = [
+                r["planned_order"] for r in payload["records"] if r["group"] == group_id
+            ]
+            self.assertEqual(orders, [["old", "new"], ["new", "old"], ["old", "new"]])
+        executed = {"old->new": 0, "new->old": 0}
+        for record in payload["records"]:
+            executed["->".join(record["planned_order"])] += 1
+        self.assertEqual(executed, payload["planned_orders"])
+
+    def test_timeout_occupies_planned_order_slot_without_resampling(self) -> None:
+        groups = [
+            dataclasses.replace(goal_groups()[2], pairs=3),
+        ]
+        campaign = PairedReplayCampaign(
+            groups, OLD, NEW, Budget(3, TIMEOUT), self.out, 20261005,
+            order_strategy="per_group", fresh=True,
+        )
+        campaign.run()
+        payload = self.summary_payload()
+        self.assertEqual(payload["totals"]["timeout"], 3)
+        self.assertEqual(payload["missing_pairs"], [])
+        orders = [r["planned_order"] for r in payload["records"]]
+        self.assertEqual(orders, [["old", "new"], ["new", "old"], ["old", "new"]])
+        self.assertEqual(payload["planned_orders"], {"old->new": 2, "new->old": 1})
 
 
 if __name__ == "__main__":

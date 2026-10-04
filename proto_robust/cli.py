@@ -67,6 +67,11 @@ def build_parser() -> argparse.ArgumentParser:
     paired.add_argument("--no-restore", action="store_true",
                         help="Only restore the frozen preparation before the first side "
                              "of each pair, exposing the second side to pollution")
+    paired.add_argument("--order-strategy", choices=("cross-group", "per-group"),
+                        default="cross-group",
+                        help="How pair execution orders alternate when a group has an odd "
+                             "number of pairs: cross-group keeps one alternation counter "
+                             "across groups; per-group restarts alternation inside each group")
     _add_campaign_args(paired)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
@@ -177,7 +182,11 @@ def _paired(args) -> int:
         args.output, seed,
         restore_between_sides=not args.no_restore,
         fresh=args.fresh,
+        order_strategy=args.order_strategy.replace("-", "_"),
     )
+    planned = campaign.planned_order_counts()
+    plan_text = " ".join(f"{key}={count}" for key, count in sorted(planned.items()))
+    print(f"planned pairs={len(campaign.plan)} strategy={campaign.order_strategy} {plan_text}")
     summary = campaign.run()
     totals = summary.totals
     print(f"seed={summary.seed} pairs={summary.pairs_executed} "
