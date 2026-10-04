@@ -1,0 +1,66 @@
+{
+  "name": "shared-file paired replay",
+  "description": "Paired old/new replay from frozen, hash-verified shared-preparation snapshots",
+  "local_only": true,
+  "groups": [
+    {
+      "id": "ledger-pollution",
+      "shared_state_template": "targets/shared_state/ledger_clean",
+      "pairs": 2,
+      "sequence": {
+        "index": 0,
+        "label": "commit-clean",
+        "start_state": "closed",
+        "steps": [
+          {"name": "open", "hex": "100000"},
+          {"name": "prepare-mode-0", "hex": "200000"},
+          {"name": "select", "hex": "300000"},
+          {"name": "commit-put", "hex": "500100"}
+        ]
+      },
+      "expected": {
+        "old": {"outcome": "ok"},
+        "new": {"outcome": "ok"}
+      }
+    },
+    {
+      "id": "commit-table",
+      "shared_state_template": "targets/shared_state/ledger_clean",
+      "pairs": 2,
+      "sequence": {
+        "index": 1,
+        "label": "commit-overread",
+        "start_state": "closed",
+        "steps": [
+          {"name": "open", "hex": "100000"},
+          {"name": "prepare-mode-0", "hex": "200000"},
+          {"name": "select", "hex": "300000"},
+          {"name": "commit-unknown", "hex": "50fe00"}
+        ]
+      },
+      "expected": {
+        "old": {"outcome": "crash", "exception_type": "IndexError"},
+        "new": {"outcome": "rejected"}
+      }
+    },
+    {
+      "id": "timing-stall",
+      "shared_state_template": "targets/shared_state/ledger_clean",
+      "pairs": 2,
+      "sequence": {
+        "index": 2,
+        "label": "timing-stall",
+        "start_state": "closed",
+        "steps": [
+          {"name": "open", "hex": "100000"},
+          {"name": "prepare-mode-0", "hex": "200000"},
+          {"name": "timing", "hex": "800000"}
+        ]
+      },
+      "expected": {
+        "old": {"outcome": "timeout"},
+        "new": {"outcome": "timeout"}
+      }
+    }
+  ]
+}

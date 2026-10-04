@@ -7,6 +7,7 @@ from proto_robust.differential import VersionSpec
 from proto_robust.fuzzer import FuzzingCampaign
 from proto_robust.goals import ResearchGoal
 from proto_robust.models import Budget
+from proto_robust.paired_campaign import PairedReplayCampaign, load_paired_goal
 from proto_robust.session_campaign import signature_from_result
 from proto_robust.session_campaign import SessionCampaign
 from proto_robust.session_runner import replay_sequence_isolated
@@ -15,6 +16,9 @@ from proto_robust.sequences import SessionSequence
 DEFAULT_TARGET = "targets.simple_message.parse_message"
 DEFAULT_SESSION_REPLAY = "targets.session_store.replay"
 DEFAULT_SESSION_DESCRIBE = "targets.session_store.describe_state"
+DEFAULT_SHARED_REPLAY = "targets.shared_file_store.replay"
+DEFAULT_SHARED_NEW_REPLAY = "targets.shared_file_store_new.replay"
+DEFAULT_SHARED_DESCRIBE = "targets.shared_file_store.describe_state"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -50,6 +54,20 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--order", choices=("fixed", "alternating"), default="fixed",
                         help="Execution order of the two versions inside each paired round")
     _add_campaign_args(compare)
+
+    paired = subparsers.add_parser(
+        "paired",
+        help="Replay paired groups from frozen, hash-verified shared-preparation snapshots",
+    )
+    paired.add_argument("--old-replay", default=DEFAULT_SHARED_REPLAY)
+    paired.add_argument("--new-replay", default=DEFAULT_SHARED_NEW_REPLAY)
+    paired.add_argument("--describe", default=DEFAULT_SHARED_DESCRIBE)
+    paired.add_argument("--old-identity", default="old")
+    paired.add_argument("--new-identity", default="new")
+    paired.add_argument("--no-restore", action="store_true",
+                        help="Only restore the frozen preparation before the first side "
+                             "of each pair, exposing the second side to pollution")
+    _add_campaign_args(paired)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
     _add_campaign_args(parser)
@@ -142,7 +160,30 @@ def main(argv: list[str] | None = None) -> int:
         return _replay(args)
     if args.command == "compare":
         return _compare(args)
+    if args.command == "paired":
+        return _paired(args)
     return _run_stateless(args)
+
+
+def _paired(args) -> int:
+    _goal, seed, pair_budget, timeout = _campaign_options(args)
+    groups, goal_payload = load_paired_goal(args.goal or "goals/shared_file_pairs.json")
+    if goal_payload.get("local_only") is False:
+        raise SystemExit("this research build refuses non-local goals")
+    old = VersionSpec(args.old_identity, args.old_replay, args.describe)
+    new = VersionSpec(args.new_identity, args.new_replay, args.describe)
+    campaign = PairedReplayCampaign(
+        groups, old, new, Budget(pair_budget, timeout, args.wall_time),
+        args.output, seed,
+        restore_between_sides=not args.no_restore,
+        fresh=args.fresh,
+    )
+    summary = campaign.run()
+    totals = summary.totals
+    print(f"seed={summary.seed} pairs={summary.pairs_executed} "
+          f"hits={totals.get('hits', 0)} prep_failed={totals.get('preparation_failed', 0)} "
+          f"timeouts={totals.get('timeout', 0)} output={summary.output_dir}")
+    return 0
 
 
 def _compare(args) -> int:

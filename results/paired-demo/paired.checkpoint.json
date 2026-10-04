@@ -1,0 +1,941 @@
+{
+  "seed": 20260929,
+  "spent": 6,
+  "next": null,
+  "groups_complete": [
+    "commit-table",
+    "ledger-pollution",
+    "timing-stall"
+  ],
+  "restore_between_sides": true,
+  "versions": {
+    "old": {
+      "identity": "old",
+      "replay": "targets.shared_file_store.replay",
+      "describe": "targets.shared_file_store.describe_state"
+    },
+    "new": {
+      "identity": "new",
+      "replay": "targets.shared_file_store_new.replay",
+      "describe": "targets.shared_file_store.describe_state"
+    }
+  },
+  "records": [
+    {
+      "group": "ledger-pollution",
+      "pair": 0,
+      "planned_order": [
+        "old",
+        "new"
+      ],
+      "executed": [
+        "old",
+        "new"
+      ],
+      "sides": {
+        "old": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "ok",
+            "start_state": "closed",
+            "end_state": "closed",
+            "duration": 0.8891613570012851,
+            "exception_type": "",
+            "message": "",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": -1,
+            "exit_code": 0,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.2800999684259295e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 7.999995432328433e-06
+              },
+              {
+                "step": 2,
+                "name": "select",
+                "hex": "300000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "selected",
+                "duration": 0.0001508169953012839
+              },
+              {
+                "step": 3,
+                "name": "commit-put",
+                "hex": "500100",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "selected",
+                "state_after": "closed",
+                "duration": 0.00011651300155790523
+              }
+            ]
+          }
+        },
+        "new": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "ok",
+            "start_state": "closed",
+            "end_state": "closed",
+            "duration": 0.8457425160013372,
+            "exception_type": "",
+            "message": "",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": -1,
+            "exit_code": 0,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.4401994121726602e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 9.702001989353448e-06
+              },
+              {
+                "step": 2,
+                "name": "select",
+                "hex": "300000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "selected",
+                "duration": 0.00014882499817758799
+              },
+              {
+                "step": 3,
+                "name": "commit-put",
+                "hex": "500100",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "selected",
+                "state_after": "closed",
+                "duration": 1.2101998436264694e-05
+              }
+            ]
+          }
+        }
+      },
+      "disposition": "hit",
+      "failure_location": ""
+    },
+    {
+      "group": "ledger-pollution",
+      "pair": 1,
+      "planned_order": [
+        "new",
+        "old"
+      ],
+      "executed": [
+        "new",
+        "old"
+      ],
+      "sides": {
+        "new": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "ok",
+            "start_state": "closed",
+            "end_state": "closed",
+            "duration": 0.9795156660038629,
+            "exception_type": "",
+            "message": "",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": -1,
+            "exit_code": 0,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.550200249766931e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 1.0001000191550702e-05
+              },
+              {
+                "step": 2,
+                "name": "select",
+                "hex": "300000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "selected",
+                "duration": 0.00020213400421198457
+              },
+              {
+                "step": 3,
+                "name": "commit-put",
+                "hex": "500100",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "selected",
+                "state_after": "closed",
+                "duration": 1.0101000953000039e-05
+              }
+            ]
+          }
+        },
+        "old": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "ok",
+            "start_state": "closed",
+            "end_state": "closed",
+            "duration": 0.8435762520020944,
+            "exception_type": "",
+            "message": "",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": -1,
+            "exit_code": 0,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.2502001482062042e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 8.101000275928527e-06
+              },
+              {
+                "step": 2,
+                "name": "select",
+                "hex": "300000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "selected",
+                "duration": 0.000149425002746284
+              },
+              {
+                "step": 3,
+                "name": "commit-put",
+                "hex": "500100",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "selected",
+                "state_after": "closed",
+                "duration": 0.00015372599591501057
+              }
+            ]
+          }
+        }
+      },
+      "disposition": "hit",
+      "failure_location": ""
+    },
+    {
+      "group": "commit-table",
+      "pair": 0,
+      "planned_order": [
+        "old",
+        "new"
+      ],
+      "executed": [
+        "old",
+        "new"
+      ],
+      "sides": {
+        "old": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "crash",
+            "start_state": "closed",
+            "end_state": "selected",
+            "duration": 0.827268228000321,
+            "exception_type": "IndexError",
+            "message": "tuple index out of range",
+            "fault_file": "/做题/题目/20261004-followup150/139-source059/A/attempts/001/workspace/targets/shared_file_store.py",
+            "fault_function": "_commit",
+            "fault_line": 89,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 3,
+            "exit_code": 0,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.3203003618400544e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 8.400995284318924e-06
+              },
+              {
+                "step": 2,
+                "name": "select",
+                "hex": "300000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "selected",
+                "duration": 0.00014792400179430842
+              },
+              {
+                "step": 3,
+                "name": "commit-unknown",
+                "hex": "50fe00",
+                "outcome": "crash",
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "state_before": "selected",
+                "state_after": "selected",
+                "duration": 3.490599920041859e-05
+              }
+            ]
+          }
+        },
+        "new": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "rejected",
+            "start_state": "closed",
+            "end_state": "selected",
+            "duration": 0.8934180799988098,
+            "exception_type": "SessionReject",
+            "message": "unknown commit operation",
+            "fault_file": "/做题/题目/20261004-followup150/139-source059/A/attempts/001/workspace/targets/shared_file_store_new.py",
+            "fault_function": "replay",
+            "fault_line": 32,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 3,
+            "exit_code": 0,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.650299964239821e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 1.040100323734805e-05
+              },
+              {
+                "step": 2,
+                "name": "select",
+                "hex": "300000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "selected",
+                "duration": 0.00014902499970048666
+              },
+              {
+                "step": 3,
+                "name": "commit-unknown",
+                "hex": "50fe00",
+                "outcome": "rejected",
+                "exception_type": "SessionReject",
+                "message": "unknown commit operation",
+                "state_before": "selected",
+                "state_after": "selected",
+                "duration": 2.970500645460561e-05
+              }
+            ]
+          }
+        }
+      },
+      "disposition": "hit",
+      "failure_location": ""
+    },
+    {
+      "group": "commit-table",
+      "pair": 1,
+      "planned_order": [
+        "new",
+        "old"
+      ],
+      "executed": [
+        "new",
+        "old"
+      ],
+      "sides": {
+        "new": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "rejected",
+            "start_state": "closed",
+            "end_state": "selected",
+            "duration": 0.8425330780009972,
+            "exception_type": "SessionReject",
+            "message": "unknown commit operation",
+            "fault_file": "/做题/题目/20261004-followup150/139-source059/A/attempts/001/workspace/targets/shared_file_store_new.py",
+            "fault_function": "replay",
+            "fault_line": 32,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 3,
+            "exit_code": 0,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.5702004020567983e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 9.801005944609642e-06
+              },
+              {
+                "step": 2,
+                "name": "select",
+                "hex": "300000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "selected",
+                "duration": 0.00014762499631615356
+              },
+              {
+                "step": 3,
+                "name": "commit-unknown",
+                "hex": "50fe00",
+                "outcome": "rejected",
+                "exception_type": "SessionReject",
+                "message": "unknown commit operation",
+                "state_before": "selected",
+                "state_after": "selected",
+                "duration": 2.9505004931706935e-05
+              }
+            ]
+          }
+        },
+        "old": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "crash",
+            "start_state": "closed",
+            "end_state": "selected",
+            "duration": 0.8342208890026086,
+            "exception_type": "IndexError",
+            "message": "tuple index out of range",
+            "fault_file": "/做题/题目/20261004-followup150/139-source059/A/attempts/001/workspace/targets/shared_file_store.py",
+            "fault_function": "_commit",
+            "fault_line": 89,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 3,
+            "exit_code": 0,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.310199877480045e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 8.700997568666935e-06
+              },
+              {
+                "step": 2,
+                "name": "select",
+                "hex": "300000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "armed",
+                "state_after": "selected",
+                "duration": 0.00020983500144211575
+              },
+              {
+                "step": 3,
+                "name": "commit-unknown",
+                "hex": "50fe00",
+                "outcome": "crash",
+                "exception_type": "IndexError",
+                "message": "tuple index out of range",
+                "state_before": "selected",
+                "state_after": "selected",
+                "duration": 3.5106000723317266e-05
+              }
+            ]
+          }
+        }
+      },
+      "disposition": "hit",
+      "failure_location": ""
+    },
+    {
+      "group": "timing-stall",
+      "pair": 0,
+      "planned_order": [
+        "old",
+        "new"
+      ],
+      "executed": [
+        "old",
+        "new"
+      ],
+      "sides": {
+        "old": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "timeout",
+            "start_state": "closed",
+            "end_state": "armed",
+            "duration": 1.505914921996009,
+            "exception_type": "",
+            "message": "sequence exceeded per-replay time budget",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 2,
+            "exit_code": null,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.340200105914846e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 8.901995897758752e-06
+              },
+              {
+                "step": 2,
+                "name": "timing",
+                "hex": "800000",
+                "outcome": "timeout",
+                "exception_type": "Timeout",
+                "message": "interaction exceeded the per-replay time budget",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 1.505914921996009
+              }
+            ]
+          }
+        },
+        "new": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "timeout",
+            "start_state": "closed",
+            "end_state": "armed",
+            "duration": 1.5043314969952917,
+            "exception_type": "",
+            "message": "sequence exceeded per-replay time budget",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 2,
+            "exit_code": null,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.5402998542413116e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 1.0201998520642519e-05
+              },
+              {
+                "step": 2,
+                "name": "timing",
+                "hex": "800000",
+                "outcome": "timeout",
+                "exception_type": "Timeout",
+                "message": "interaction exceeded the per-replay time budget",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 1.5043314969952917
+              }
+            ]
+          }
+        }
+      },
+      "disposition": "timeout",
+      "failure_location": ""
+    },
+    {
+      "group": "timing-stall",
+      "pair": 1,
+      "planned_order": [
+        "new",
+        "old"
+      ],
+      "executed": [
+        "new",
+        "old"
+      ],
+      "sides": {
+        "new": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "timeout",
+            "start_state": "closed",
+            "end_state": "armed",
+            "duration": 1.5048029480021796,
+            "exception_type": "",
+            "message": "sequence exceeded per-replay time budget",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 2,
+            "exit_code": null,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.5901998267509043e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 1.0201998520642519e-05
+              },
+              {
+                "step": 2,
+                "name": "timing",
+                "hex": "800000",
+                "outcome": "timeout",
+                "exception_type": "Timeout",
+                "message": "interaction exceeded the per-replay time budget",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 1.5048029480021796
+              }
+            ]
+          }
+        },
+        "old": {
+          "preparation": {
+            "verified": true,
+            "checked_files": 2,
+            "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2",
+            "mismatches": [],
+            "missing": [],
+            "extra": [],
+            "failure_location": ""
+          },
+          "result": {
+            "outcome": "timeout",
+            "start_state": "closed",
+            "end_state": "armed",
+            "duration": 1.5034285169967916,
+            "exception_type": "",
+            "message": "sequence exceeded per-replay time budget",
+            "fault_file": "",
+            "fault_function": "",
+            "fault_line": 0,
+            "state_path": "",
+            "key_conditions": [],
+            "failing_step": 2,
+            "exit_code": null,
+            "steps": [
+              {
+                "step": 0,
+                "name": "open",
+                "hex": "100000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "closed",
+                "state_after": "open",
+                "duration": 1.2902994058094919e-05
+              },
+              {
+                "step": 1,
+                "name": "prepare-mode-0",
+                "hex": "200000",
+                "outcome": "ok",
+                "exception_type": "",
+                "message": "",
+                "state_before": "open",
+                "state_after": "armed",
+                "duration": 8.702001650817692e-06
+              },
+              {
+                "step": 2,
+                "name": "timing",
+                "hex": "800000",
+                "outcome": "timeout",
+                "exception_type": "Timeout",
+                "message": "interaction exceeded the per-replay time budget",
+                "state_before": "armed",
+                "state_after": "armed",
+                "duration": 1.5034285169967916
+              }
+            ]
+          }
+        }
+      },
+      "disposition": "timeout",
+      "failure_location": ""
+    }
+  ]
+}

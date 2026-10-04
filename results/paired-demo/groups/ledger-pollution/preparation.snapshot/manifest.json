@@ -1,0 +1,8 @@
+{
+  "source": "targets/shared_state/ledger_clean",
+  "files": {
+    "ledger.log": "106a035210feb4b86fd4e372e649346e258a9ec0349f323cd968f7e9376bf3a0",
+    "slots.json": "650e63638b658d50fe710759a7c85f09d0594f085505b3aab24b7d78f1a4b903"
+  },
+  "tree_sha256": "8795f795b3c98aabcfcc0542adad3b7cadd833cf54a4117780f96fe9702438f2"
+}

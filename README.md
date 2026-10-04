@@ -170,3 +170,31 @@ python -m proto_robust.cli compare \
 
 摘要中 `outcomes` 分别列出有效试验（`valid`，命中+拒绝）、`hit`、`rejected`、`timeout`、`preparation_failed` 与 `incomplete`；`order_conditioned_notes` 用文字说明哪些结论仍受顺序条件限制。最终保留的候选（`final.sequence.json`）可按记录的双方起点、按原顺序重新演示。
 - `differential.json`：预算、恢复标记、版本身份、输入顺序和四类结果汇总。
+
+## 共享准备快照的配对回放（第五轮增强）
+
+`paired` 子命令面向“共享准备状态影响新旧版本结果”的配对实验。每个配对组先把共享准备目录**冻结一次**为可核对快照（`preparation.snapshot/` 内含逐文件 SHA-256 清单），随后组内配对交替按 旧→新 与 新→旧 顺序执行；**每一侧**运行前都把快照恢复到运行目录并逐文件重读哈希校验——准备是否真正恢复以内容哈希证据为准，目录存在不算数：
+
+```bash
+python -m proto_robust.cli paired --goal goals/shared_file_pairs.json \
+  --output results/paired-demo --cases 6 --timeout 1.5
+
+# 只在每对第一侧前恢复（暴露第二侧被污染的对照实验）
+python -m proto_robust.cli paired --goal goals/shared_file_pairs.json \
+  --output results/paired-norestore --no-restore --cases 6 --timeout 1.5
+```
+
+### 目标案例：真实共享文件状态
+
+`targets/shared_file_store.py` 的会话事务在内存中，但 COMMIT 会向共享目录（`SHARED_FILE_STATE_DIR`）的 `ledger.log` 追加一行且不回滚；SELECT 用 ledger 行数索引桶表（缺陷 `ledger-table`）。因此 **旧→新 顺序下，旧侧的提交会污染新侧的准备**：不恢复时新侧 SELECT 越界 `IndexError`，而 新→旧 顺序不受影响（新版 `targets/shared_file_store_new.py` 把提交暂存在会话内，不写共享 ledger）。逐侧恢复并校验后，两种顺序的统计完全一致（见 `results/paired-demo/paired.json` 的 `orders` 对比）。
+
+### 配对语义
+
+- 每侧记录 `preparation` 证据：校验是否通过、核对的文件数、清单哈希、不匹配/缺失/多余文件及失败位置。
+- 某一侧运行前准备无法恢复时，该对记为 `preparation_failed`，保留失败位置和已实际运行的一侧结果，**不会重新抽样补成完整配对**。
+- 任一侧目标超时记为 `timeout`，两侧已运行部分都保留。
+- 两侧结果与组内预期（outcome/异常类型/缺陷位置）比对：一致为 `hit`，否则 `miss`；`valid = hit + miss`。
+
+### 跨组统计与断点续跑
+
+`paired.json` 分别展示 `preparation_failed`、`timeout`、`valid`、`hits`/`misses`，并按组（`groups`）和按执行顺序（`orders`）分别汇总。每对执行后原子写入 `paired.checkpoint.json`（下一个待执行组/对、已执行记录）；中断后用相同 `--output` 再跑即从未执行的组继续，已执行配对不重复、不重新计费，`--fresh` 可忽略旧检查点。
