@@ -72,6 +72,14 @@ def build_parser() -> argparse.ArgumentParser:
                         help="How pair execution orders alternate when a group has an odd "
                              "number of pairs: cross-group keeps one alternation counter "
                              "across groups; per-group restarts alternation inside each group")
+    paired.add_argument("--compensation", choices=("keep-gaps", "fill-failed", "append-balanced"),
+                        default=None,
+                        help="Compensation scheme for failed/dropped-out pairs: keep-gaps "
+                             "leaves the gaps, fill-failed appends one replacement per gap, "
+                             "append-balanced also appends positions to rebalance each group")
+    paired.add_argument("--compare-compensation", action="store_true",
+                        help="Only print the side-by-side comparison of compensation "
+                             "schemes for the current checkpoint, without executing")
     _add_campaign_args(paired)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
@@ -187,12 +195,44 @@ def _paired(args) -> int:
     planned = campaign.planned_order_counts()
     plan_text = " ".join(f"{key}={count}" for key, count in sorted(planned.items()))
     print(f"planned pairs={len(campaign.plan)} strategy={campaign.order_strategy} {plan_text}")
+    if args.compare_compensation:
+        _print_scheme_comparison(campaign.scheme_comparison())
+        return 0
+    if args.compensation:
+        strategy = args.compensation.replace("-", "_")
+        _print_scheme_comparison(campaign.scheme_comparison())
+        report = campaign.apply_compensation(strategy)
+        gaps = len(report["gaps"])
+        added = len(report["additions"])
+        print(f"compensation strategy={strategy} gaps={gaps} added={added} "
+              f"already_compensated={len(report['already_compensated'])}")
+        if report["status"] == "infeasible":
+            for conflict in report["conflicts"]:
+                print(f"conflict {conflict['constraint']}: {conflict['detail']}")
+            return 1
+        planned = campaign.planned_order_counts()
+        plan_text = " ".join(f"{key}={count}" for key, count in sorted(planned.items()))
+        print(f"planned pairs={len(campaign.plan)} strategy={campaign.order_strategy} {plan_text}")
     summary = campaign.run()
     totals = summary.totals
     print(f"seed={summary.seed} pairs={summary.pairs_executed} "
           f"hits={totals.get('hits', 0)} prep_failed={totals.get('preparation_failed', 0)} "
           f"timeouts={totals.get('timeout', 0)} output={summary.output_dir}")
     return 0
+
+
+def _print_scheme_comparison(comparison: dict) -> None:
+    for name, scheme in comparison.items():
+        metrics = scheme["metrics"]
+        if scheme["status"] != "ok":
+            print(f"  {name}: infeasible "
+              f"({', '.join(c['constraint'] for c in scheme['conflicts'])})")
+            continue
+        print(f"  {name}: +{scheme['additions']} positions "
+              f"imbalance={metrics['total_order_imbalance']} "
+              f"adjacent_same_order={metrics['adjacent_same_order']} "
+              f"adjacent_same_group={metrics['adjacent_same_group']} "
+              f"coverage={metrics['combinations_covered']}/{metrics['combinations_total']}")
 
 
 def _compare(args) -> int:

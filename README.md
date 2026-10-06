@@ -207,3 +207,27 @@ python -m proto_robust.cli paired --goal goals/shared_file_pairs.json \
 - `per-group`：每组独立从 旧→新 重新开始交替，奇数对组会各多一次 旧→新，便于逐组对比同一顺序序列。
 
 运行开始前会打印各执行顺序的计划数量（`planned pairs=N strategy=... old->new=x new->old=y`），完整计划（每对的组号、对号、计划顺序）随检查点持久化。中断续接沿用检查点中的原计划：即使重开时指定了另一种策略，也不会重新从旧版本开始交替。准备失败与目标超时的配对仍占用其原计划顺序位置，不补抽样；`paired.json` 中 `planned_orders`（计划数量）、`orders`（实际执行）与 `missing_pairs`（未执行配对及其原因，如 `budget_exhausted`）三者始终对账一致：计划数 = 实际执行数 + 缺失数。
+
+## 中途退出的配对补偿安排（第七轮增强）
+
+实验开始前计划已固定；部分试验失败（准备失败、超时）或参与者退出后，失败占位**不会被抹掉**，已执行顺序也**不会重排**。研究者用 `--compensation` 选择补偿方案，系统只把新位置**追加**到现有序列末尾：
+
+```bash
+# 先比较三种方案对顺序平衡、相邻重复、处理组合覆盖的影响（不执行）
+python -m proto_robust.cli paired --output results/paired-demo \
+  --compare-compensation
+
+# 选定方案并继续执行：keep-gaps / fill-failed / append-balanced
+python -m proto_robust.cli paired --output results/paired-demo \
+  --compensation fill-failed --cases 12
+```
+
+三种方案：
+
+- `keep-gaps`：保留缺口，不追加任何位置。
+- `fill-failed`：每个缺口追加一个同组、同计划顺序的补位。
+- `append-balanced`：先补失败位置，再为受缺口影响的组追加平衡试验，使该组两种执行顺序的有效数量重新相等。
+
+追加位置同时满足三条约束：奇数组的不平衡按组评估而不强制全局交替；全部组共享同一执行资源，追加位置只能排成一条全局尾序列；同一对象（组的共享准备/参与者）不能连续出现在两个相邻位置（含已有序列与追加尾的边界）。无可行安排时方案标记 `infeasible` 并逐条列出相冲突的约束（如 `no_consecutive_same_object` 与 `single_shared_execution_resource`），计划保持不变。
+
+每个新增位置都记录 `compensates`（由哪个缺口产生）与 `compensation_strategy`；补偿位置自身不会再产生新的补偿，重复申请同一方案不会追加第二份。补偿后的完整计划随 `paired.checkpoint.json` 持久化，任意位置暂停后用相同 `--output` 重开，继续执行的顺序与选定方案一致；`paired.json` 的 `compensation` 与 `scheme_comparison` 分别记录所选方案报告和三种方案的指标对比（每组顺序平衡、相邻同序/同组重复、处理组合覆盖）。

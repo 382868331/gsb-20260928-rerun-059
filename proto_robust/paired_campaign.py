@@ -22,6 +22,11 @@ import os
 from pathlib import Path
 import time
 
+from proto_robust.compensation import (
+    COMPENSATION_STRATEGIES,
+    compare_schemes,
+    plan_compensation,
+)
 from proto_robust.differential import VersionSpec
 from proto_robust.models import Budget, Outcome
 from proto_robust.preparation import (
@@ -107,6 +112,7 @@ class PairedReplayCampaign:
         self.records: list[dict] = []
         self.spent = 0
         self.resumed = False
+        self.compensation_report: dict | None = None
         if not self.fresh:
             self._load_checkpoint()
 
@@ -139,11 +145,52 @@ class PairedReplayCampaign:
             counts[key] = counts.get(key, 0) + 1
         return counts
 
-    def _planned_order(self, group_id: str, pair_index: int) -> list:
+    def _plan_entry(self, group_id: str, pair_index: int) -> dict:
         for entry in self.plan:
             if entry["group"] == group_id and entry["pair"] == pair_index:
-                return list(entry["planned_order"])
+                return entry
         raise KeyError(f"pair not in plan: {group_id}#{pair_index}")
+
+    def _planned_order(self, group_id: str, pair_index: int) -> list:
+        return list(self._plan_entry(group_id, pair_index)["planned_order"])
+
+    def apply_compensation(self, strategy: str) -> dict:
+        """Append compensation positions for the current gaps.
+
+        The executed sequence is never reordered and failed placeholders
+        stay occupied; new positions are appended after the existing plan
+        and each records which gap produced it.  Gaps that already have a
+        compensation entry are skipped, so a repeated request never
+        appends a second copy.  An infeasible scheme leaves the plan
+        untouched and reports the conflicting constraints.
+        """
+        if strategy not in COMPENSATION_STRATEGIES:
+            raise ValueError(f"unknown compensation strategy: {strategy}")
+        report = plan_compensation(self.plan, self.records, strategy)
+        self.compensation_report = report
+        if report["status"] == "ok" and report["additions"]:
+            next_index: dict[str, int] = {}
+            for entry in self.plan:
+                group = entry["group"]
+                next_index[group] = max(next_index.get(group, 0), entry["pair"] + 1)
+            for addition in report["additions"]:
+                group = addition["group"]
+                self.plan.append({
+                    "group": group,
+                    "pair": next_index[group],
+                    "planned_order": list(addition["planned_order"]),
+                    "compensates": dict(addition["compensates"]),
+                    "compensation_strategy": addition["compensation_strategy"],
+                    "reason": addition["reason"],
+                })
+                next_index[group] += 1
+        if report["status"] == "ok":
+            self._write_checkpoint()
+        return report
+
+    def scheme_comparison(self) -> dict:
+        """Side-by-side metrics of every compensation scheme."""
+        return compare_schemes(self.plan, self.records)
 
     def missing_pairs(self) -> list[dict]:
         """Planned pairs that never executed, with the reason they are absent.
@@ -166,23 +213,22 @@ class PairedReplayCampaign:
     def run(self) -> PairedSummary:
         start = time.monotonic()
         exhausted = False
-        for group_index, group in enumerate(self.groups):
+        groups_by_id = {group.group_id: group for group in self.groups}
+        for group in self.groups:
             snapshot_dir = self._snapshot_dir(group)
             if not (snapshot_dir / "manifest.json").exists():
                 freeze_preparation(group.template_dir, snapshot_dir)
-            for pair_index in range(group.pairs):
-                if self._pair_done(group.group_id, pair_index):
-                    continue
-                if self.spent >= self.budget.max_cases:
-                    exhausted = True
-                    break
-                record = self._run_pair(group, pair_index)
-                self.records.append(record)
-                self.spent += 1
-                self._write_checkpoint()
-            if exhausted:
+        for entry in self.plan:
+            if self._pair_done(entry["group"], entry["pair"]):
+                continue
+            if self.spent >= self.budget.max_cases:
+                exhausted = True
                 break
-        total_pairs = sum(group.pairs for group in self.groups)
+            record = self._run_pair(groups_by_id[entry["group"]], entry["pair"])
+            self.records.append(record)
+            self.spent += 1
+            self._write_checkpoint()
+        total_pairs = len(self.plan)
         if len(self.records) >= total_pairs:
             exhausted = False
         elif self.spent >= self.budget.max_cases:
@@ -215,7 +261,8 @@ class PairedReplayCampaign:
         return restore_preparation(self._snapshot_dir(group), self._runtime_dir())
 
     def _run_pair(self, group: PairedGroupSpec, pair_index: int) -> dict:
-        planned = self._planned_order(group.group_id, pair_index)
+        entry = self._plan_entry(group.group_id, pair_index)
+        planned = list(entry["planned_order"])
         order = tuple(self.versions[identity] for identity in planned)
         record = {
             "group": group.group_id,
@@ -226,6 +273,9 @@ class PairedReplayCampaign:
             "disposition": None,
             "failure_location": "",
         }
+        if entry.get("compensates"):
+            record["compensates"] = dict(entry["compensates"])
+            record["compensation_strategy"] = entry.get("compensation_strategy")
         timed_out = False
         for position, version in enumerate(order):
             # The first side always starts from a verified restore; the
@@ -289,14 +339,12 @@ class PairedReplayCampaign:
     def _write_checkpoint(self) -> None:
         done = {record["group"] for record in self.records}
         next_position = None
-        for group in self.groups:
-            for pair_index in range(group.pairs):
-                if not self._pair_done(group.group_id, pair_index):
-                    next_position = {"group": group.group_id, "pair": pair_index}
-                    break
-            if next_position:
+        for entry in self.plan:
+            if not self._pair_done(entry["group"], entry["pair"]):
+                next_position = {"group": entry["group"], "pair": entry["pair"]}
                 break
         payload = {
+            "compensation": self.compensation_report,
             "seed": self.seed,
             "spent": self.spent,
             "next": next_position,
@@ -317,6 +365,7 @@ class PairedReplayCampaign:
         self.records = list(payload.get("records", []))
         self.spent = int(payload.get("spent", len(self.records)))
         self.resumed = True
+        self.compensation_report = payload.get("compensation")
         saved_plan = payload.get("plan")
         if saved_plan:
             # Resume keeps the original plan: a restarted run must not
@@ -346,6 +395,8 @@ class PairedReplayCampaign:
             "order_strategy": self.order_strategy,
             "planned_orders": self.planned_order_counts(),
             "missing_pairs": self.missing_pairs(),
+            "compensation": self.compensation_report,
+            "scheme_comparison": self.scheme_comparison(),
             "budget": {
                 "max_pairs": self.budget.max_cases,
                 "timeout": self.budget.timeout,
