@@ -301,5 +301,125 @@ class OrderStrategyTests(unittest.TestCase):
         self.assertEqual(payload["planned_orders"], {"old->new": 2, "new->old": 1})
 
 
+class CompensationPlanTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.out = Path(self.tmp.name) / "paired"
+
+    def campaign(self, groups, policy: str = "keep_gap", strategy: str = "per_group",
+                 fresh: bool = True):
+        return PairedReplayCampaign(
+            groups, OLD, NEW, Budget(20, TIMEOUT), self.out, 20261006,
+            order_strategy=strategy, compensation_policy=policy, fresh=fresh,
+        )
+
+    @staticmethod
+    def fail_original(campaign, group_id: str, pair_index: int,
+                      disposition: str = "withdrawn") -> None:
+        planned = campaign._planned_order(group_id, pair_index)
+        campaign.records.append({
+            "slot_id": f"original:{group_id}:{pair_index}",
+            "group": group_id,
+            "pair": pair_index,
+            "planned_order": planned,
+            "slot_kind": "original",
+            "source_gaps": [],
+            "executed": [planned[0]],
+            "sides": {planned[0]: {"result": {"outcome": "ok"}}},
+            "disposition": disposition,
+            "failure_location": "participant",
+        })
+        campaign.spent += 1
+
+    def test_keep_gap_retains_failed_slot_and_compares_coverage(self) -> None:
+        campaign = self.campaign([dataclasses.replace(goal_groups()[0], pairs=2)])
+        self.fail_original(campaign, "ledger-pollution", 0)
+        analysis = campaign.apply_compensation_policy()
+
+        self.assertEqual(analysis["gaps"][0]["slot_id"], "original:ledger-pollution:0")
+        self.assertEqual(analysis["schemes"]["keep_gap"]["retained_gaps"],
+                         ["original:ledger-pollution:0"])
+        self.assertEqual(len(campaign.plan), 2)
+        self.assertEqual(campaign.records[0]["disposition"], "withdrawn")
+        self.assertEqual(
+            analysis["schemes"]["keep_gap"]["metrics"]["per_group_order_counts"],
+            {"ledger-pollution": {"old->new": 0, "new->old": 1}},
+        )
+
+    def test_replace_failed_uses_only_matching_unexecuted_slot_and_records_source(self) -> None:
+        groups = [dataclasses.replace(goal_groups()[0], pairs=4)]
+        campaign = self.campaign(groups, policy="replace_failed")
+        self.fail_original(campaign, "ledger-pollution", 0)
+        analysis = campaign.apply_compensation_policy()
+
+        reused = analysis["schemes"]["replace_failed"]["reused_unexecuted_slots"]
+        self.assertEqual(len(reused), 1)
+        self.assertEqual(reused[0]["slot_id"], "original:ledger-pollution:2")
+        self.assertEqual(reused[0]["source_gap"], "original:ledger-pollution:0")
+        replacement = next(
+            entry for entry in campaign.plan if entry["slot_id"] == reused[0]["slot_id"]
+        )
+        self.assertEqual(replacement["source_gaps"], ["original:ledger-pollution:0"])
+        self.assertEqual(len(campaign.plan), 4)
+
+    def test_balanced_append_can_restore_even_effective_coverage(self) -> None:
+        groups = [dataclasses.replace(goal_groups()[0], pairs=2)]
+        campaign = self.campaign(groups, policy="balanced_append")
+        self.fail_original(campaign, "ledger-pollution", 0)
+        analysis = campaign.apply_compensation_policy()
+        scheme = analysis["schemes"]["balanced_append"]
+        self.assertEqual(scheme["conflicts"], [])
+        added = scheme["additional_slots"]
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0]["planned_order"], ["old", "new"])
+        self.assertEqual(added[0]["source_gaps"], ["original:ledger-pollution:0"])
+
+    def test_feasible_balanced_append_adds_explicitly_sourced_slot_once(self) -> None:
+        groups = [dataclasses.replace(goal_groups()[0], pairs=4)]
+        campaign = self.campaign(groups, policy="balanced_append")
+        self.fail_original(campaign, "ledger-pollution", 0)
+        analysis = campaign.apply_compensation_policy()
+        self.assertEqual(analysis["schemes"]["balanced_append"]["conflicts"], [])
+        added = [entry for entry in campaign.plan if entry["slot_kind"] == "compensation"]
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0]["source_gaps"], ["original:ledger-pollution:0"])
+        self.assertEqual(added[0]["planned_order"], ["old", "new"])
+        campaign.apply_compensation_policy()
+        self.assertEqual(
+            len([entry for entry in campaign.plan if entry["slot_kind"] == "compensation"]),
+            1,
+        )
+
+    def test_resume_freezes_policy_and_appended_execution_order(self) -> None:
+        groups = [dataclasses.replace(goal_groups()[0], pairs=2)]
+        campaign = self.campaign(groups, policy="balanced_append")
+        self.fail_original(campaign, "ledger-pollution", 0)
+        campaign.apply_compensation_policy()
+        campaign._write_checkpoint()
+
+        resumed = self.campaign(groups, policy="keep_gap", fresh=False)
+        self.assertTrue(resumed.resumed)
+        self.assertEqual(resumed.compensation_policy, "balanced_append")
+        planned = [
+            (entry["slot_id"], entry["planned_order"], entry.get("source_gaps", []))
+            for entry in resumed._ordered_plan()
+        ]
+        self.assertEqual(planned[-1:], [
+            ("compensation:0", ["old", "new"], ["original:ledger-pollution:0"]),
+        ])
+
+    def test_adjacent_repeat_conflict_is_reported_without_appending(self) -> None:
+        groups = [dataclasses.replace(goal_groups()[0], pairs=3)]
+        campaign = self.campaign(groups, policy="balanced_append", strategy="per_group")
+        self.fail_original(campaign, "ledger-pollution", 1, disposition="timeout")
+        analysis = campaign.apply_compensation_policy()
+        scheme = analysis["schemes"]["balanced_append"]
+        self.assertEqual(scheme["additional_slots"], [])
+        self.assertTrue(scheme["retained_gaps"])
+        self.assertTrue(scheme["additional_slots"] == [])
+        self.assertTrue(any("adjacent" in item["constraint"] for item in scheme["conflicts"]))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -72,6 +72,10 @@ def build_parser() -> argparse.ArgumentParser:
                         help="How pair execution orders alternate when a group has an odd "
                              "number of pairs: cross-group keeps one alternation counter "
                              "across groups; per-group restarts alternation inside each group")
+    paired.add_argument("--compensation", choices=("keep-gap", "replace-failed", "balanced-append"),
+                        default="keep-gap",
+                        help="Policy after failed/withdrawn pairs: retain the evidence gap, use only an "
+                             "unexecuted replacement position, or append an explicitly sourced balanced trial")
     _add_campaign_args(paired)
 
     # Flat (no subcommand) invocation stays equivalent to the stateless run.
@@ -183,10 +187,12 @@ def _paired(args) -> int:
         restore_between_sides=not args.no_restore,
         fresh=args.fresh,
         order_strategy=args.order_strategy.replace("-", "_"),
+        compensation_policy=args.compensation.replace("-", "_"),
     )
     planned = campaign.planned_order_counts()
     plan_text = " ".join(f"{key}={count}" for key, count in sorted(planned.items()))
-    print(f"planned pairs={len(campaign.plan)} strategy={campaign.order_strategy} {plan_text}")
+    print(f"planned pairs={len(campaign.plan)} strategy={campaign.order_strategy} "
+          f"compensation={campaign.compensation_policy} {plan_text}")
     summary = campaign.run()
     totals = summary.totals
     print(f"seed={summary.seed} pairs={summary.pairs_executed} "

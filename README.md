@@ -207,3 +207,19 @@ python -m proto_robust.cli paired --goal goals/shared_file_pairs.json \
 - `per-group`：每组独立从 旧→新 重新开始交替，奇数对组会各多一次 旧→新，便于逐组对比同一顺序序列。
 
 运行开始前会打印各执行顺序的计划数量（`planned pairs=N strategy=... old->new=x new->old=y`），完整计划（每对的组号、对号、计划顺序）随检查点持久化。中断续接沿用检查点中的原计划：即使重开时指定了另一种策略，也不会重新从旧版本开始交替。准备失败与目标超时的配对仍占用其原计划顺序位置，不补抽样；`paired.json` 中 `planned_orders`（计划数量）、`orders`（实际执行）与 `missing_pairs`（未执行配对及其原因，如 `budget_exhausted`）三者始终对账一致：计划数 = 实际执行数 + 缺失数。
+
+### 中途退出后的补偿安排（第七轮增强）
+
+实验开始前，原始顺序计划立即固定并写入 `paired.checkpoint.json`。任何 `preparation_failed`、`timeout` 或参与者退出记录都保留在原槽位上，不能删除、不能改写为“未发生”，也不会重跑该槽位。研究者只能通过 `--compensation` 选择后续证据安排：
+
+- `keep-gap`（默认）：保留失败/退出缺口，不新增试验；报告只统计仍有效的处理组合覆盖。
+- `replace-failed`：仅把一个**尚未执行**的同组、同顺序原始槽位标记为补偿槽位，并记录 `source_gaps`；没有合格槽位时保留缺口并在冲突中说明。
+- `balanced-append`：只追加明确新增的槽位，使有效试验在适用的组内或跨组共享资源上恢复平衡；每个新增槽位都保留产生它的原始缺口，重复应用同一策略不会为同一缺口再追加一份。
+
+`paired.json` 的 `compensation.gaps` 与 `compensation.all_gaps` 保留失败/退出依据；`compensation.schemes` 同时比较三种方案对每组顺序平衡、相邻重复组合、处理组合覆盖的影响。新增槽位位于原始计划之后，因此不重排任何已执行顺序。若奇数组、跨组共享执行资源或相邻组合约束互相冲突，`balanced_append.conflicts` 会说明冲突约束，且不会静默追加。暂停后以相同 `--output` 重开时，检查点中的补偿策略和追加顺序优先；命令行改选其他策略不会改变既有计划。
+
+```bash
+python -m proto_robust.cli paired --goal goals/shared_file_pairs.json \
+  --output results/paired-compensation --cases 8 --timeout 1.5 \
+  --order-strategy per-group --compensation balanced-append
+```
